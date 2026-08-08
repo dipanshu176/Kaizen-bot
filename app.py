@@ -11,6 +11,8 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 import io
 from googleapiclient.errors import HttpError
+import requests
+import base64
 
 # ==========================================
 # CONFIGURATION & AUTHENTICATION
@@ -32,6 +34,15 @@ def get_sheet(sheet_name):
     # Replace with your actual Spreadsheet ID
     sh = gc.open_by_key(st.secrets["spreadsheet_id"]) 
     return sh.worksheet(sheet_name)
+
+def upload_to_imgbb(uploaded_file):
+    url = "https://api.imgbb.com/1/upload"
+    payload = {
+        "key": st.secrets["imgbb_key"],
+        "image": base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
+    }
+    res = requests.post(url, data=payload)
+    return res.json()["data"]["url"]
 
 def upload_to_drive(uploaded_file):
     creds = get_google_credentials()
