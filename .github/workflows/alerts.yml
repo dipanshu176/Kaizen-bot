@@ -1,6 +1,7 @@
 name: Kaizen Automated Alerts
 
 on:
+  workflow_dispatch:
   schedule:
     # 18:30 UTC = Midnight IST (Check if Heads submitted)
     - cron: '30 18 * * *'
