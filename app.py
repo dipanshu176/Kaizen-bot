@@ -13,6 +13,7 @@ import io
 from googleapiclient.errors import HttpError
 import requests
 import base64
+import re
 
 # ==========================================
 # CONFIGURATION & AUTHENTICATION
