@@ -228,22 +228,8 @@ else:
             for idx, row in my_subs.iterrows():
                 with st.expander(f"{row['Timestamp']} - {row['Status']}"):
                     st.markdown(row['Submission_Data'])
-                   submission_text = str(row['Submission_Data'])
-                        
-                        # Find all ImgBB URLs in the text
-                        urls = re.findall(r'(https?://[^\s]+)', submission_text)
-                        
-                        # Clean the text by removing the raw URL strings
-                        clean_text = re.sub(r'Proof: https?://[^\s]+', '', submission_text)
-                        
-                        # Display the clean text
-                        st.markdown(clean_text)
-                        
-                        # Display the extracted URLs as actual images
-                        if urls:
-                            st.markdown("**Attached Proofs:**")
-                            for url in urls:
-                                st.image(url, width=400) # Adjust width as needed
+                    if row['Status'] == 'Delayed':
+                        st.error(f"**Feedback/Reason from Senior Core:**\n{row['Feedback_Reason']}")
     # ------------------------------------------
     # 2. ADVISORY BOARD & ED VIEW (VERIFICATION)
     # ------------------------------------------
@@ -259,8 +245,22 @@ else:
             else:
                 for idx, row in pending.iterrows():
                     with st.expander(f"{row['Name']} - {row['Role']} ({row['Timestamp']})"):
-                        st.markdown(row['Submission_Data'])
+                        submission_text = str(row['Submission_Data'])
                         
+                        # Find all ImgBB URLs in the text
+                        urls = re.findall(r'(https?://[^\s]+)', submission_text)
+                        
+                        # Clean the text by removing the raw URL strings
+                        clean_text = re.sub(r'Proof: https?://[^\s]+', '', submission_text)
+                        
+                        # Display the clean text
+                        st.markdown(clean_text)
+                        
+                        # Display the extracted URLs as actual images
+                        if urls:
+                            st.markdown("**Attached Proofs:**")
+                            for url in urls:
+                                st.image(url, width=400)
                         # Use forms for row-specific button handling
                         with st.form(key=f"form_{idx}"):
                             delay_reason = st.text_input("Reason for delay (Required if clicking Delay):")
