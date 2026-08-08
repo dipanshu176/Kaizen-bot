@@ -293,6 +293,45 @@ else:
                 try: st.dataframe(pd.DataFrame(get_sheet("Insight_Series").get_all_records()), use_container_width=True, hide_index=True)
                 except: st.caption("No data yet.")
 
+            # --- PROJECTS METRICS DASHBOARD ---
+            st.markdown("---")
+            st.subheader("Head of Projects - Outreach & Conversion Metrics")
+            projects_df = subs_df[subs_df['Role'] == 'Head of Projects']
+            
+            if not projects_df.empty:
+                project_stats = []
+                for _, p_row in projects_df.iterrows():
+                    text = str(p_row['Submission_Data'])
+                    
+                    # Helper function to extract numbers from the text block
+                    def extract_val(label, txt):
+                        match = re.search(rf'\*\*{label}\*\*: (\d+)', txt)
+                        return int(match.group(1)) if match else 0
+                        
+                    project_stats.append({
+                        'Name': p_row['Name'],
+                        'Mails Sent': extract_val('Mails Sent', text),
+                        'Calls Done': extract_val('Calls Done', text),
+                        'LinkedIn Msgs': extract_val('LinkedIn Msgs', text),
+                        'Meetings Done': extract_val('Meetings Done', text),
+                        'Projects Converted': extract_val('Projects Converted', text)
+                    })
+                    
+                stats_df = pd.DataFrame(project_stats)
+                
+                # Group by Name to get total sums across all their submissions
+                agg_stats = stats_df.groupby('Name').sum()
+                
+                if not agg_stats.empty:
+                    # Display the raw numbers in a clean table
+                    st.dataframe(agg_stats, use_container_width=True)
+                    # Display a stacked bar chart comparing the Heads
+                    st.bar_chart(agg_stats)
+                else:
+                    st.caption("No quantifiable project metrics found yet.")
+            else:
+                st.caption("No project metrics available yet.")
+
         # --- TAB 2: PENDING QUEUE ---
         with tab_pend:
             st.subheader("Verify New Submissions")
