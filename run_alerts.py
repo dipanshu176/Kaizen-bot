@@ -65,16 +65,31 @@ if current_hour == 0:
 # ==========================================
 # 12:00 PM LOGIC: Did Senior Core verify yesterday's?
 # ==========================================
-elif current_hour == 12: 
-    pending = subs_df[subs_df['Status'] == 'Pending']
+elif current_hour == 12:
+    # Fetch the data
+    subs_data = sheet.get_all_records()
+    subs_df = pd.DataFrame(subs_data)
     
-    if not pending.empty:
-        # Alert all Advisory Board members and the ED
-        advisors = users_df[users_df['Role'].isin(["Advisory Board", "Executive Director"])]
-        advisor_emails = advisors['Email'].tolist()
+    # Check if the sheet is empty to prevent crashes
+    if not subs_df.empty and 'Status' in subs_df.columns:
         
-        body = f"Hello Senior Core,\n\nThere are {len(pending)} unverified updates remaining in the Kaizen Portal. Please log in and verify them."
+        # Look specifically for submissions that are still 'Pending'
+        pending_subs = subs_df[subs_df['Status'] == 'Pending']
         
-        for email in advisor_emails:
-            send_email(email, "ACTION REQUIRED: Pending Verifications", body)
-        print("Warning sent to Senior Core.")
+        # Only send the email if the pending list is NOT empty
+        if not pending_subs.empty:
+            pending_count = len(pending_subs)
+            
+            # Setup your email to the Advisory Board
+            subject = "Kaizen Portal: Pending Verifications"
+            body = f"Hello Senior Core,\n\nThere are currently {pending_count} pending updates waiting to be verified in the portal.\n\nPlease log in to review them."
+            
+            # Send the email (assuming you loop through your Advisory board emails here)
+            for board_email in advisory_emails:
+                send_email(board_email, subject, body)
+                
+            print(f"Alert sent to Advisory Board for {pending_count} pending items.")
+        else:
+            print("No pending submissions. Skipping Advisory Board email.")
+    else:
+        print("Sheet is empty. Skipping Advisory Board email.")
