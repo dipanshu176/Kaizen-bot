@@ -229,7 +229,7 @@ else:
                 with st.expander(f"{row['Timestamp']} - {row['Status']}"):
                     st.markdown(row['Submission_Data'])
                     if row['Status'] == 'Delayed':
-                        st.error(f"**Feedback/Reason from Senior Core:**\n{row['Feedback_Reason']}")
+                        st.error(f"**Feedback/Reason from Senior Core:**\n{row.get('Feedback_Reason', 'No reason provided.')}")
     # ------------------------------------------
     # 2. ADVISORY BOARD & ED VIEW (VERIFICATION)
     # ------------------------------------------
