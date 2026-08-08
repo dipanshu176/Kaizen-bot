@@ -10,6 +10,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 import io
+from googleapiclient.errors import HttpError
 
 # ==========================================
 # CONFIGURATION & AUTHENTICATION
@@ -41,7 +42,11 @@ def upload_to_drive(uploaded_file):
         'parents': [st.secrets["drive_folder_id"]]
     }
     media = MediaIoBaseUpload(io.BytesIO(uploaded_file.getvalue()), mimetype=uploaded_file.type, resumable=False)
-    
+    try:
+        file = drive_service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
+    except HttpError as error:
+        st.error(f"Google Error Details: {error.content}")
+        st.stop()
     file = drive_service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
     
     # Make file readable to anyone with the link
