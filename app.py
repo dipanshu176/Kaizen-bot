@@ -40,7 +40,7 @@ def upload_to_drive(uploaded_file):
         'name': uploaded_file.name,
         'parents': [st.secrets["drive_folder_id"]]
     }
-    media = MediaIoBaseUpload(io.BytesIO(uploaded_file.getvalue()), mimetype=uploaded_file.type, resumable=True)
+    media = MediaIoBaseUpload(io.BytesIO(uploaded_file.getvalue()), mimetype=uploaded_file.type, resumable=False)
     
     file = drive_service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
     
