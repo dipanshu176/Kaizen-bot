@@ -45,8 +45,16 @@ if current_hour == 0:
     heads = users_df[users_df['Role'].str.contains("Head")]
     
     # Check if they have an entry in the sheet with today's date
-    todays_subs = subs_df[subs_df['Timestamp'].str.contains(today_date)]
-    submitted_names = todays_subs['Name'].tolist()
+subs_data = sheet.get_all_records()
+    subs_df = pd.DataFrame(subs_data)
+    
+    # Check if the sheet is completely empty to prevent the KeyError
+    if subs_df.empty or 'Timestamp' not in subs_df.columns:
+        submitted_names = [] # No one has submitted anything today
+    else:
+        # Ensure it reads as text, then filter for today's date
+        todays_subs = subs_df[subs_df['Timestamp'].astype(str).str.contains(today_date)]
+        submitted_names = todays_subs['Name'].tolist()
     
     for _, head in heads.iterrows():
         if head['Name'] not in submitted_names:
