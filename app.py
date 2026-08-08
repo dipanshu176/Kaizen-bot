@@ -32,7 +32,7 @@ def get_sheet(sheet_name):
     credentials = dict(st.secrets["gcp_service_account"])
     gc = gspread.service_account_from_dict(credentials)
     # REPLACE with your actual Google Sheet exact name or URL
-    sh = gc.open("Kaizen_Management_Database") 
+    sh = gc.open_by_key("1_WmKztvT7p2X0Yj6M7fbwlLQ3SFbDFT7xMlhiLr1kQ8") 
     return sh.worksheet(sheet_name)
 
 # --- Authentication ---
