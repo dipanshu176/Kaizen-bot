@@ -193,8 +193,8 @@ else:
                     # Handle multiple file uploads
                     if "Head of Projects" in st.session_state.role and proof_files:
                         for f in proof_files:
-                            link = upload_to_drive(f)
-                            uploaded_links.append(f"Link: {link}")
+                            link = upload_to_imgbb(f)
+                            uploaded_links.append(f"Proof: {link}")
                     
                     # Format data
                     formatted_data = "\n".join([f"**{k}**: {v}" for k, v in responses.items() if v])
