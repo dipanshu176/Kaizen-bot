@@ -176,6 +176,7 @@ else:
                 responses["Case Study Status"] = st.selectbox("Case Study Status", ["Drafting", "review", "done", "posted"])
 
             # --- HEAD OF DIGITAL ---
+            # --- HEAD OF DIGITAL ---
             elif st.session_state.role == "Head of Digital":
                 st.subheader("Section 1: Podcast")
                 col1, col2 = st.columns(2)
@@ -187,27 +188,27 @@ else:
                 responses["Insight Topic"] = st.selectbox("Current Topic", insight_topics) if insight_topics else st.text_input("Current Topic (Type manually if list is empty)")
                 responses["Insight Status"] = st.selectbox("Status", ["Drafting", "review", "done", "posted"])
 
+            # --- VOLUNTARY CONTRIBUTION ---
+            st.markdown("---")
+            responses["Voluntary Contribution"] = st.text_area("Voluntary contribution outside your vertical (Optional)")
+
             # --- SUBMISSION LOGIC ---
             submitted = st.form_submit_button("Submit EOD Update")
             if submitted:
-                with st.spinner("Processing submission and uploading files..."):
-                    # Handle multiple file uploads
+                with st.spinner("Processing submission..."):
                     if "Head of Projects" in st.session_state.role and proof_files:
                         for f in proof_files:
                             link = upload_to_imgbb(f)
                             uploaded_links.append(f"Proof: {link}")
                     
-                    # Format data
                     formatted_data = "\n".join([f"**{k}**: {v}" for k, v in responses.items() if v])
                     if uploaded_links:
                         formatted_data += "\n\n**Proofs:**\n" + "\n".join(uploaded_links)
                         
-                    # Push to DB
                     ist_now = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
                     sheet = get_sheet("Submissions")
-                    sheet.append_row([ist_now, st.session_state.name, st.session_state.role, formatted_data, "Pending", ""])
+                    sheet.append_row([ist_now, st.session_state.name, st.session_state.role, formatted_data, "Pending", "", ""])
                     
-                    # Update dynamic sheets if marked as done/posted
                     if st.session_state.role == "Head of Research":
                         if responses["Industry Status"].lower() == "done":
                             update_topic_status("Industries", responses["Industry Topic"], "done")
@@ -228,116 +229,147 @@ else:
             for idx, row in my_subs.iterrows():
                 with st.expander(f"{row['Timestamp']} - {row['Status']}"):
                     st.markdown(row['Submission_Data'])
-                    if row['Status'] == 'Delayed':
-                            st.error(f"**Feedback/Reason from Senior Core:**\n{row.get('Feedback_Reason', 'No reason provided.')}")
-                            
-                            head_reason = row.get('Head_Reason', '')
-                            if not head_reason:
-                                with st.form(key=f"head_reason_{idx}"):
-                                    reason_input = st.text_area("Enter your explanation for this delayed update:")
-                                    if st.form_submit_button("Submit Explanation"):
-                                        if reason_input:
-                                            sheet = get_sheet("Submissions")
-                                            sheet.update_cell(idx + 2, 7, reason_input)
-                                            st.success("Explanation sent to Senior Core!")
-                                            st.rerun()
-                                        else:
-                                            st.error("Please type a reason before submitting.")
-                            else:
-                                st.info(f"**Your Submitted Explanation:**\n{head_reason}")
+                    
+                    if row['Status'] == 'Rejected':
+                        st.error(f"**Contribution Rejected by Senior Core:**\n{row.get('Feedback_Reason', 'No reason provided.')}")
+                        
+                    elif row['Status'] == 'Delayed':
+                        st.warning(f"**Feedback/Reason from Senior Core:**\n{row.get('Feedback_Reason', 'No reason provided.')}")
+                        head_reason = row.get('Head_Reason', '')
+                        if not head_reason:
+                            with st.form(key=f"head_reason_{idx}"):
+                                reason_input = st.text_area("Enter your explanation for this delayed update:")
+                                if st.form_submit_button("Submit Explanation"):
+                                    if reason_input:
+                                        sheet = get_sheet("Submissions")
+                                        sheet.update_cell(idx + 2, 7, reason_input)
+                                        st.success("Explanation sent to Senior Core!")
+                                        st.rerun()
+                                    else:
+                                        st.error("Please type a reason before submitting.")
+                        else:
+                            st.info(f"**Your Submitted Explanation:**\n{head_reason}")
+    # ------------------------------------------
+    # 2. ADVISORY BOARD & ED VIEW (VERIFICATION)
+    # ------------------------------------------
     # ------------------------------------------
     # 2. ADVISORY BOARD & ED VIEW (VERIFICATION)
     # ------------------------------------------
     if st.session_state.role in ["Advisory Board", "Executive Director"]:
-        st.header("Verify Team Submissions")
+        st.header("Senior Core Portal")
+        
         sheet = get_sheet("Submissions")
         subs_df = pd.DataFrame(sheet.get_all_records())
         
-        if not subs_df.empty:
-            pending = subs_df[subs_df['Status'] == 'Pending']
-            if pending.empty:
-                st.info("No pending submissions to verify.")
-            else:
-                for idx, row in pending.iterrows():
-                    with st.expander(f"{row['Name']} - {row['Role']} ({row['Timestamp']})"):
-                        submission_text = str(row['Submission_Data'])
-                        
-                        # Find all ImgBB URLs in the text
-                        urls = re.findall(r'(https?://[^\s]+)', submission_text)
-                        
-                        # Clean the text by removing the raw URL strings
-                        clean_text = re.sub(r'Proof: https?://[^\s]+', '', submission_text)
-                        
-                        # Display the clean text
-                        st.markdown(clean_text)
-                        
-                        # Display the extracted URLs as actual images
-                        if urls:
-                            st.markdown("**Attached Proofs:**")
-                            for url in urls:
-                                st.image(url, width=400)
-                        # Use forms for row-specific button handling
-                        with st.form(key=f"form_{idx}"):
-                            delay_reason = st.text_input("Reason for delay (Required if clicking Delay):")
-                            col1, col2 = st.columns(2)
-                            verify_btn = col1.form_submit_button("Verify Contribution")
-                            delay_btn = col2.form_submit_button("Delay Contribution")
-                            
-                            if verify_btn:
-                                sheet.update_cell(idx + 2, 5, "Verified")
-                                st.success(f"Verified {row['Name']}'s update!")
-                                st.rerun()
-                                
-                            if delay_btn:
-                                if not delay_reason:
-                                    st.error("Please provide a reason to delay the contribution.")
-                                else:
-                                    sheet.update_cell(idx + 2, 5, "Delayed")
-                                    sheet.update_cell(idx + 2, 6, delay_reason)
-                                    
-                                    # Fetch email of the Head
-                                    users_df = pd.DataFrame(get_sheet("Users").get_all_records())
-                                    head_email = users_df[users_df['Name'] == row['Name']].iloc[0]['Email']
-                                    
-                                    # Send immediate email
-                                    body = f"Hi {row['Name']},\n\nYour Kaizen update submitted on {row['Timestamp']} has been Delayed by the Senior Core.\n\nReason:\n{delay_reason}\n\nPlease check the portal and submit a new update addressing this feedback."
-                                    send_immediate_email(head_email, "Kaizen Portal: Contribution Delayed", body)
-                                    
-                                    st.warning(f"Delayed {row['Name']}'s update. Email sent.")
-                                    st.rerun()
-                                    # --- DELAYED SUBMISSIONS & RESOLUTION DASHBOARD ---
-        st.markdown("---")
-        st.subheader("Delayed Updates & Head Explanations")
+        tab_dash, tab_pend, tab_res = st.tabs(["📊 Analytics Dashboard", "✅ Pending Queue", "⏳ Resolution Queue"])
         
-        if not subs_df.empty:
-            delayed = subs_df[subs_df['Status'] == 'Delayed']
-            if delayed.empty:
-                st.info("No delayed submissions waiting for review.")
-            else:
-                for idx, row in delayed.iterrows():
-                    with st.expander(f"{row['Name']} - {row['Role']} ({row['Timestamp']})"):
-                        # Format the image links just like the pending queue
-                        submission_text = str(row['Submission_Data'])
-                        urls = re.findall(r'(https?://[^\s]+)', submission_text)
-                        clean_text = re.sub(r'Proof: https?://[^\s]+', '', submission_text)
-                        st.markdown(clean_text)
-                        
-                        if urls:
-                            st.markdown("**Attached Proofs:**")
-                            for url in urls:
-                                st.image(url, width=400)
+        # --- TAB 1: DASHBOARD ---
+        with tab_dash:
+            st.subheader("Team Output Volume")
+            if not subs_df.empty:
+                # Graph showing how many submissions each head has made
+                head_counts = subs_df['Name'].value_counts()
+                st.bar_chart(head_counts)
+                
+                col1, col2, col3, col4 = st.columns(4)
+                col1.metric("Total Submissions", len(subs_df))
+                col2.metric("Verified", len(subs_df[subs_df['Status'] == 'Verified']))
+                col3.metric("Delayed", len(subs_df[subs_df['Status'] == 'Delayed']))
+                col4.metric("Rejected", len(subs_df[subs_df['Status'] == 'Rejected']))
+            
+            st.markdown("---")
+            st.subheader("Department Active Projects (What they are doing vs Done)")
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.write("**Research (Industries)**")
+                try: st.dataframe(pd.DataFrame(get_sheet("Industries").get_all_records()), use_container_width=True, hide_index=True)
+                except: st.caption("No data yet.")
+            with c2:
+                st.write("**Research (Case Studies)**")
+                try: st.dataframe(pd.DataFrame(get_sheet("Case_Studies").get_all_records()), use_container_width=True, hide_index=True)
+                except: st.caption("No data yet.")
+            with c3:
+                st.write("**Digital (Insight Series)**")
+                try: st.dataframe(pd.DataFrame(get_sheet("Insight_Series").get_all_records()), use_container_width=True, hide_index=True)
+                except: st.caption("No data yet.")
+
+        # --- TAB 2: PENDING QUEUE ---
+        with tab_pend:
+            st.subheader("Verify New Submissions")
+            if not subs_df.empty:
+                pending = subs_df[subs_df['Status'] == 'Pending']
+                if pending.empty:
+                    st.info("No pending submissions to verify.")
+                else:
+                    for idx, row in pending.iterrows():
+                        with st.expander(f"{row['Name']} - {row['Role']} ({row['Timestamp']})"):
+                            submission_text = str(row['Submission_Data'])
+                            urls = re.findall(r'(https?://[^\s]+)', submission_text)
+                            clean_text = re.sub(r'Proof: https?://[^\s]+', '', submission_text)
+                            st.markdown(clean_text)
+                            if urls:
+                                st.markdown("**Attached Proofs:**")
+                                for url in urls: st.image(url, width=400)
+                            
+                            with st.form(key=f"form_{idx}"):
+                                delay_reason = st.text_input("Feedback / Reason (Required if Delaying or Rejecting):")
+                                col1, col2, col3 = st.columns(3)
+                                verify_btn = col1.form_submit_button("Verify Contribution")
+                                delay_btn = col2.form_submit_button("Delay Contribution")
+                                reject_btn = col3.form_submit_button("Reject Contribution")
                                 
-                        st.error(f"**Senior Core Feedback:** {row.get('Feedback_Reason', '')}")
-                        
-                        # Check if the head has replied yet
-                        head_reason = row.get('Head_Reason', '')
-                        if head_reason:
-                            st.info(f"**Head's Explanation:**\n{head_reason}")
-                            with st.form(key=f"resolve_{idx}"):
-                                if st.form_submit_button("Accept Reason & Verify"):
-                                    sheet = get_sheet("Submissions")
+                                if verify_btn:
                                     sheet.update_cell(idx + 2, 5, "Verified")
-                                    st.success("Resolved and Verified!")
+                                    st.success(f"Verified {row['Name']}'s update!")
                                     st.rerun()
-                        else:
-                            st.warning("Waiting for the Head to provide their explanation.")
+                                    
+                                if delay_btn or reject_btn:
+                                    if not delay_reason:
+                                        st.error("Please provide a reason to delay or reject.")
+                                    else:
+                                        new_status = "Rejected" if reject_btn else "Delayed"
+                                        sheet.update_cell(idx + 2, 5, new_status)
+                                        sheet.update_cell(idx + 2, 6, delay_reason)
+                                        
+                                        users_df = pd.DataFrame(get_sheet("Users").get_all_records())
+                                        head_email = users_df[users_df['Name'] == row['Name']].iloc[0]['Email']
+                                        
+                                        body = f"Hi {row['Name']},\n\nYour Kaizen update submitted on {row['Timestamp']} has been {new_status} by the Senior Core.\n\nReason:\n{delay_reason}\n\nPlease log into the portal to review."
+                                        send_immediate_email(head_email, f"Kaizen Portal: Contribution {new_status}", body)
+                                        
+                                        st.warning(f"{new_status} {row['Name']}'s update. Email sent.")
+                                        st.rerun()
+
+        # --- TAB 3: RESOLUTION QUEUE ---
+        with tab_res:
+            st.subheader("Review Delayed Explanations")
+            if not subs_df.empty:
+                delayed = subs_df[subs_df['Status'] == 'Delayed']
+                if delayed.empty:
+                    st.info("No delayed submissions waiting for review.")
+                else:
+                    for idx, row in delayed.iterrows():
+                        with st.expander(f"{row['Name']} - {row['Role']} ({row['Timestamp']})"):
+                            submission_text = str(row['Submission_Data'])
+                            urls = re.findall(r'(https?://[^\s]+)', submission_text)
+                            clean_text = re.sub(r'Proof: https?://[^\s]+', '', submission_text)
+                            st.markdown(clean_text)
+                            if urls:
+                                for url in urls: st.image(url, width=400)
+                                    
+                            st.warning(f"**Senior Core Feedback:** {row.get('Feedback_Reason', '')}")
+                            
+                            head_reason = row.get('Head_Reason', '')
+                            if head_reason:
+                                st.info(f"**Head's Explanation:**\n{head_reason}")
+                                with st.form(key=f"resolve_{idx}"):
+                                    if st.form_submit_button("Accept Reason & Verify"):
+                                        sheet.update_cell(idx + 2, 5, "Verified")
+                                        st.success("Resolved and Verified!")
+                                        st.rerun()
+                                    if st.form_submit_button("Reject Explanation"):
+                                        sheet.update_cell(idx + 2, 5, "Rejected")
+                                        st.error("Explanation Rejected.")
+                                        st.rerun()
+                            else:
+                                st.error("Waiting for the Head to provide their explanation.")
