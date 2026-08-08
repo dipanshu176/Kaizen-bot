@@ -6,7 +6,8 @@ import pandas as pd
 from datetime import datetime
 import pytz
 import json
-
+import pytz
+from datetime import datetime
 # Setup Email Credentials from GitHub Secrets
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
 APP_PASSWORD = os.environ.get("APP_PASSWORD")
