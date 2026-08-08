@@ -229,7 +229,22 @@ else:
                 with st.expander(f"{row['Timestamp']} - {row['Status']}"):
                     st.markdown(row['Submission_Data'])
                     if row['Status'] == 'Delayed':
-                        st.error(f"**Feedback/Reason from Senior Core:**\n{row.get('Feedback_Reason', 'No reason provided.')}")
+                            st.error(f"**Feedback/Reason from Senior Core:**\n{row.get('Feedback_Reason', 'No reason provided.')}")
+                            
+                            head_reason = row.get('Head_Reason', '')
+                            if not head_reason:
+                                with st.form(key=f"head_reason_{idx}"):
+                                    reason_input = st.text_area("Enter your explanation for this delayed update:")
+                                    if st.form_submit_button("Submit Explanation"):
+                                        if reason_input:
+                                            sheet = get_sheet("Submissions")
+                                            sheet.update_cell(idx + 2, 7, reason_input)
+                                            st.success("Explanation sent to Senior Core!")
+                                            st.rerun()
+                                        else:
+                                            st.error("Please type a reason before submitting.")
+                            else:
+                                st.info(f"**Your Submitted Explanation:**\n{head_reason}")
     # ------------------------------------------
     # 2. ADVISORY BOARD & ED VIEW (VERIFICATION)
     # ------------------------------------------
@@ -290,3 +305,39 @@ else:
                                     
                                     st.warning(f"Delayed {row['Name']}'s update. Email sent.")
                                     st.rerun()
+                                    # --- DELAYED SUBMISSIONS & RESOLUTION DASHBOARD ---
+        st.markdown("---")
+        st.subheader("Delayed Updates & Head Explanations")
+        
+        if not subs_df.empty:
+            delayed = subs_df[subs_df['Status'] == 'Delayed']
+            if delayed.empty:
+                st.info("No delayed submissions waiting for review.")
+            else:
+                for idx, row in delayed.iterrows():
+                    with st.expander(f"{row['Name']} - {row['Role']} ({row['Timestamp']})"):
+                        # Format the image links just like the pending queue
+                        submission_text = str(row['Submission_Data'])
+                        urls = re.findall(r'(https?://[^\s]+)', submission_text)
+                        clean_text = re.sub(r'Proof: https?://[^\s]+', '', submission_text)
+                        st.markdown(clean_text)
+                        
+                        if urls:
+                            st.markdown("**Attached Proofs:**")
+                            for url in urls:
+                                st.image(url, width=400)
+                                
+                        st.error(f"**Senior Core Feedback:** {row.get('Feedback_Reason', '')}")
+                        
+                        # Check if the head has replied yet
+                        head_reason = row.get('Head_Reason', '')
+                        if head_reason:
+                            st.info(f"**Head's Explanation:**\n{head_reason}")
+                            with st.form(key=f"resolve_{idx}"):
+                                if st.form_submit_button("Accept Reason & Verify"):
+                                    sheet = get_sheet("Submissions")
+                                    sheet.update_cell(idx + 2, 5, "Verified")
+                                    st.success("Resolved and Verified!")
+                                    st.rerun()
+                        else:
+                            st.warning("Waiting for the Head to provide their explanation.")
