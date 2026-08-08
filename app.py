@@ -228,9 +228,22 @@ else:
             for idx, row in my_subs.iterrows():
                 with st.expander(f"{row['Timestamp']} - {row['Status']}"):
                     st.markdown(row['Submission_Data'])
-                    if row['Status'] == 'Delayed':
-                        st.error(f"**Feedback/Reason from Senior Core:**\n{row['Feedback_Reason']}")
-
+                   submission_text = str(row['Submission_Data'])
+                        
+                        # Find all ImgBB URLs in the text
+                        urls = re.findall(r'(https?://[^\s]+)', submission_text)
+                        
+                        # Clean the text by removing the raw URL strings
+                        clean_text = re.sub(r'Proof: https?://[^\s]+', '', submission_text)
+                        
+                        # Display the clean text
+                        st.markdown(clean_text)
+                        
+                        # Display the extracted URLs as actual images
+                        if urls:
+                            st.markdown("**Attached Proofs:**")
+                            for url in urls:
+                                st.image(url, width=400) # Adjust width as needed
     # ------------------------------------------
     # 2. ADVISORY BOARD & ED VIEW (VERIFICATION)
     # ------------------------------------------
