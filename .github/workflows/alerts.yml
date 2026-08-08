@@ -1,0 +1,30 @@
+name: Kaizen Automated Alerts
+
+on:
+  schedule:
+    # 18:30 UTC = Midnight IST (Check if Heads submitted)
+    - cron: '30 18 * * *'
+    # 06:30 UTC = 12:00 PM IST (Check if Advisory Board verified)
+    - cron: '30 06 * * *'
+
+jobs:
+  run-alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install dependencies
+        run: pip install gspread pandas pytz
+        
+      - name: Run Automation Script
+        env:
+          # You will save these secrets in your GitHub Repository Settings
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+        run: python run_alerts.py
