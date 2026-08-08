@@ -45,7 +45,7 @@ if current_hour == 0:
     heads = users_df[users_df['Role'].str.contains("Head")]
     
     # Check if they have an entry in the sheet with today's date
-subs_data = sheet.get_all_records()
+    subs_data = sheet.get_all_records()
     subs_df = pd.DataFrame(subs_data)
     
     # Check if the sheet is completely empty to prevent the KeyError
