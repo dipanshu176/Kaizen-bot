@@ -40,7 +40,7 @@ today_date = ist_now.strftime("%Y-%m-%d")
 # ==========================================
 # MIDNIGHT LOGIC: Did Heads submit today?
 # ==========================================
-if current_hour >= 0: 
+if current_hour == 0: 
     heads = users_df[users_df['Role'].str.contains("Head")]
     
     # Check if they have an entry in the sheet with today's date
