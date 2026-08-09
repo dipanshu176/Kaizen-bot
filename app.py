@@ -158,16 +158,21 @@ else:
     # ------------------------------------------
     if "Head" in st.session_state.role:
         st.header("Daily Update Submission")
-        responses = {}
         uploaded_links = []
+        
+        # --- ATTENDANCE TRACKER (Moved OUTSIDE the form for instant updates) ---
+        st.subheader("Daily Attendance")
+        attendance = st.radio("Today's Status", ["Working normally", "Ill", "Vacation", "Others"], horizontal=True)
+        
+        absence_reason = ""
+        if attendance == "Others":
+            absence_reason = st.text_input("Please specify your reason:")
+            
         with st.form(key="daily_update_form"):
             responses = {}
             
-            # --- ATTENDANCE TRACKER ---
-            st.subheader("Daily Attendance")
-            attendance = st.radio("Today's Status", ["Working normally", "Ill", "Vacation", "Others"], horizontal=True)
+            # Map the attendance responses inside the form so it saves to the database
             if attendance == "Others":
-                absence_reason = st.text_input("Please specify your reason:")
                 responses["Attendance Status"] = f"Others ({absence_reason})"
             elif attendance != "Working normally":
                 responses["Attendance Status"] = attendance
@@ -178,6 +183,7 @@ else:
                 st.info("You are marked as away. You can submit this update as-is to log your absence, or add voluntary notes below.")
                 
             st.markdown("---")
+            # ... (All of your other department-specific questions and the submit button go here!) ...
             # ... (KEEP ALL YOUR EXISTING HEAD-SPECIFIC LOGIC HERE: Mails Sent, Current Topic, etc.) ...
             # --- HEAD OF PROJECTS ---
             if st.session_state.role == "Head of Projects":
