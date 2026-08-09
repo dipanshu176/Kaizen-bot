@@ -161,21 +161,27 @@ else:
         uploaded_links = []
         
         # --- ATTENDANCE TRACKER (Moved OUTSIDE the form for instant updates) ---
+        # --- ATTENDANCE TRACKER (Moved OUTSIDE the form for instant updates) ---
         st.subheader("Daily Attendance")
         attendance = st.radio("Today's Status", ["Working normally", "Ill", "Vacation", "Others"], horizontal=True)
         
         absence_reason = ""
+        expected_days = 0
+        
         if attendance == "Others":
             absence_reason = st.text_input("Please specify your reason:")
+            
+        if attendance != "Working normally":
+            expected_days = st.number_input("Expected number of days away:", min_value=1, step=1, value=1)
             
         with st.form(key="daily_update_form"):
             responses = {}
             
             # Map the attendance responses inside the form so it saves to the database
             if attendance == "Others":
-                responses["Attendance Status"] = f"Others ({absence_reason})"
+                responses["Attendance Status"] = f"Others ({absence_reason}) | Expected return in: {expected_days} day(s)"
             elif attendance != "Working normally":
-                responses["Attendance Status"] = attendance
+                responses["Attendance Status"] = f"{attendance} | Expected return in: {expected_days} day(s)"
             else:
                 responses["Attendance Status"] = "Working normally"
                 
@@ -183,6 +189,7 @@ else:
                 st.info("You are marked as away. You can submit this update as-is to log your absence, or add voluntary notes below.")
                 
             st.markdown("---")
+            # ... (Your department-specific questions remain here) ...
             # ... (All of your other department-specific questions and the submit button go here!) ...
             # ... (KEEP ALL YOUR EXISTING HEAD-SPECIFIC LOGIC HERE: Mails Sent, Current Topic, etc.) ...
             # --- HEAD OF PROJECTS ---
