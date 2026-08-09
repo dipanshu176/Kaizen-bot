@@ -69,10 +69,12 @@ if current_hour in [0,1,2]:
 # ==========================================
 # 12:00 PM LOGIC: Did Senior Core verify yesterday's?
 # ==========================================
-elif current_hour == 12:
+elif current_hour in [12,13,14]:
     # Fetch the data
     subs_data = sheet.get_all_records()
     subs_df = pd.DataFrame(subs_data)
+
+   
     
     # Check if the sheet is empty to prevent crashes
     if not subs_df.empty and 'Status' in subs_df.columns:
