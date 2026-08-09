@@ -16,6 +16,8 @@ GCP_CREDENTIALS = json.loads(os.environ.get("GCP_CREDENTIALS"))
 # Connect to Google Sheet
 gc = gspread.service_account_from_dict(GCP_CREDENTIALS)
 sh = gc.open_by_key("1_WmKztvT7p2X0Yj6M7fbwlLQ3SFbDFT7xMlhiLr1kQ8")
+spreadsheet = gc.open("Kaizen_Management_Database")
+sheet = spreadsheet.worksheet("Submissions")
 
 def send_email(to_email, subject, body):
     msg = EmailMessage()
