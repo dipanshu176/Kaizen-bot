@@ -161,7 +161,7 @@ else:
         responses = {}
         uploaded_links = []
         
-       with st.form(key="daily_update_form"):
+           with st.form(key="daily_update_form"):
             responses = {}
             
             # --- ATTENDANCE TRACKER ---
