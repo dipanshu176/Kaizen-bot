@@ -210,12 +210,12 @@ else:
                     sheet.append_row([ist_now, st.session_state.name, st.session_state.role, formatted_data, "Pending", "", ""])
                     
                     if st.session_state.role == "Head of Research":
-                        if responses["Industry Status"].lower() == "done":
-                            update_topic_status("Industries", responses["Industry Topic"], "done")
-                        if responses["Case Study Status"].lower() in ["done", "posted"]:
+                        if responses.get("Industry Status"):
+                            update_topic_status("Industries", responses["Industry Topic"], responses["Industry Status"])
+                        if responses.get("Case Study Status"):
                             update_topic_status("Case_Studies", responses["Case Study Topic"], responses["Case Study Status"])
                     elif st.session_state.role == "Head of Digital":
-                        if responses["Insight Status"].lower() in ["done", "posted"]:
+                        if responses.get("Insight Status"):
                             update_topic_status("Insight_Series", responses["Insight Topic"], responses["Insight Status"])
                             
                     st.success("Update submitted successfully!")
