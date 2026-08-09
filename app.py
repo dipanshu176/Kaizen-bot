@@ -318,7 +318,7 @@ else:
         sheet = get_sheet("Submissions")
         subs_df = pd.DataFrame(sheet.get_all_records())
         
-        tab_dash, tab_pend, tab_res = st.tabs(["📊 Analytics Dashboard", "✅ Pending Queue", "⏳ Resolution Queue"])
+        tab_dash, tab_pend, tab_res tab_hist = st.tabs(["📊 Analytics Dashboard", "✅ Pending Queue", "⏳ Resolution Queue", "🗂️ Audit History"])
         
         # --- TAB 1: DASHBOARD ---
         # --- TAB 1: DASHBOARD ---
@@ -458,6 +458,7 @@ else:
                                         new_status = "Rejected" if reject_btn else "Delayed"
                                         sheet.update_cell(idx + 2, 5, new_status)
                                         sheet.update_cell(idx + 2, 6, delay_reason)
+                                        sheet.update_cell(idx + 2, 8, st.session_state.name)
                                         
                                         users_df = pd.DataFrame(get_sheet("Users").get_all_records())
                                         head_email = users_df[users_df['Name'] == row['Name']].iloc[0]['Email']
@@ -498,7 +499,66 @@ else:
                                         st.rerun()
                                     if st.form_submit_button("Reject Explanation"):
                                         sheet.update_cell(idx + 2, 5, "Rejected")
+                                        sheet.update_cell(idx + 2, 8, st.session_state.name)
                                         st.error("Explanation Rejected.")
                                         st.rerun()
                             else:
                                 st.error("Waiting for the Head to provide their explanation.")
+        
+        # --- TAB 4: AUDIT HISTORY ---
+        with tab_hist:
+            st.subheader("Senior Core Action Logs")
+            if not subs_df.empty:
+                # Filter to only show items that have been acted upon
+                history_df = subs_df[subs_df['Status'].isin(['Verified', 'Delayed', 'Rejected'])].copy()
+                
+                if not history_df.empty:
+                    # Extract just the date (YYYY-MM-DD) from Timestamp for the filter
+                    history_df['Date_Only'] = history_df['Timestamp'].apply(lambda x: str(x).split(' ')[0])
+                    
+                    # Create the layout for the filters
+                    col1, col2 = st.columns(2)
+                    available_dates = sorted(history_df['Date_Only'].unique(), reverse=True)
+                    
+                    # Date and Status Filters
+                    selected_date = col1.selectbox("Filter by Date:", ["All Days"] + list(available_dates))
+                    selected_statuses = col2.multiselect("Filter by Status:", ["Verified", "Delayed", "Rejected"], default=["Verified", "Delayed", "Rejected"])
+                    
+                    # Apply the chosen filters to the data
+                    if selected_date != "All Days":
+                        history_df = history_df[history_df['Date_Only'] == selected_date]
+                    history_df = history_df[history_df['Status'].isin(selected_statuses)]
+                    
+                    if history_df.empty:
+                        st.info("No records found for these filters.")
+                    else:
+                        st.markdown(f"**Showing {len(history_df)} record(s)**")
+                        for idx, row in history_df.iterrows():
+                            actor = row.get('Verified_By', 'Unknown Core Member')
+                            status = row['Status']
+                            
+                            # Define the UI badge based on the status
+                            if status == 'Verified':
+                                badge = f"✅ **{status}** by **{actor}**"
+                            elif status == 'Delayed':
+                                badge = f"⏳ **{status}** by **{actor}**"
+                            else:
+                                badge = f"🚫 **{status}** by **{actor}**"
+                                
+                            with st.expander(f"{row['Name']} - {row['Role']} ({row['Timestamp']})"):
+                                st.markdown(badge)
+                                if status in ['Delayed', 'Rejected']:
+                                    st.markdown(f"**Reason given:** {row.get('Feedback_Reason', 'No reason provided.')}")
+                                    
+                                st.markdown("---")
+                                # Show the original submission data cleanly
+                                submission_text = str(row['Submission_Data'])
+                                urls = re.findall(r'(https?://[^\s]+)', submission_text)
+                                clean_text = re.sub(r'Proof: https?://[^\s]+', '', submission_text)
+                                st.markdown(clean_text)
+                                
+                                if urls:
+                                    st.markdown("**Attached Proofs:**")
+                                    for url in urls: st.image(url, width=400)
+                else:
+                    st.info("No actions have been logged yet.")
