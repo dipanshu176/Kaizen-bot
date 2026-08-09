@@ -7,7 +7,7 @@ from datetime import datetime
 import pytz
 import json
 import pytz
-from datetime import datetime
+from datetime import datetime, timedelta
 # Setup Email Credentials from GitHub Secrets
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
 APP_PASSWORD = os.environ.get("APP_PASSWORD")
@@ -41,19 +41,21 @@ today_date = ist_now.strftime("%Y-%m-%d")
 # ==========================================
 # MIDNIGHT LOGIC: Did Heads submit today?
 # ==========================================
-if current_hour == 0: 
+if current_hour in [0,1,2]: 
     heads = users_df[users_df['Role'].str.contains("Head")]
     
     # Check if they have an entry in the sheet with today's date
     subs_data = sheet.get_all_records()
     subs_df = pd.DataFrame(subs_data)
+    # We must check YESTERDAY'S date because it is currently past midnight
+    yesterday_date = (ist_now - timedelta(days=1)).strftime("%Y-%m-%d")
     
     # Check if the sheet is completely empty to prevent the KeyError
     if subs_df.empty or 'Timestamp' not in subs_df.columns:
         submitted_names = [] # No one has submitted anything today
     else:
-        # Ensure it reads as text, then filter for today's date
-        todays_subs = subs_df[subs_df['Timestamp'].astype(str).str.contains(today_date)]
+        # Filter for yesterday's date, not today's
+        todays_subs = subs_df[subs_df['Timestamp'].astype(str).str.contains(yesterday_date)]
         submitted_names = todays_subs['Name'].tolist()
     
     for _, head in heads.iterrows():
