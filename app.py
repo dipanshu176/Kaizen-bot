@@ -243,6 +243,10 @@ else:
             st.markdown("---")
             responses["Voluntary Contribution"] = st.text_area("Voluntary contribution outside your vertical (Optional)")
 
+            # --- OTHERS ---
+            st.markdown("---")
+            responses["Notes"] = st.text_area("Notes, if any")
+
             # --- SUBMISSION LOGIC ---
             submitted = st.form_submit_button("Submit EOD Update")
             if submitted:
