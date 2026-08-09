@@ -280,8 +280,14 @@ else:
             for idx, row in my_subs.iterrows():
                 with st.expander(f"{row['Timestamp']} - {row['Status']}"):
                     st.markdown(row['Submission_Data'])
+                    if row['Status'] == 'Verified':
+                        verifier = row.get('Verified_By', '')
+                        if verifier:
+                            st.success(f"✅ Verified by: {verifier}")
+                        else:
+                            st.success("✅ Verified by: Senior Core")
                     
-                    if row['Status'] == 'Rejected':
+                    elif row['Status'] == 'Rejected':
                         st.error(f"**Contribution Rejected by Senior Core:**\n{row.get('Feedback_Reason', 'No reason provided.')}")
                         
                     elif row['Status'] == 'Delayed':
@@ -441,6 +447,7 @@ else:
                                 
                                 if verify_btn:
                                     sheet.update_cell(idx + 2, 5, "Verified")
+                                    sheet.update_cell(idx + 2, 8, st.session_state.name)
                                     st.success(f"Verified {row['Name']}'s update!")
                                     st.rerun()
                                     
@@ -486,6 +493,7 @@ else:
                                 with st.form(key=f"resolve_{idx}"):
                                     if st.form_submit_button("Accept Reason & Verify"):
                                         sheet.update_cell(idx + 2, 5, "Verified")
+                                        sheet.update_cell(idx + 2, 8, st.session_state.name)
                                         st.success("Resolved and Verified!")
                                         st.rerun()
                                     if st.form_submit_button("Reject Explanation"):
