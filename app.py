@@ -90,13 +90,34 @@ def get_active_topics(sheet_name):
     except:
         return []
 
-def update_topic_status(sheet_name, topic, new_status):
+def update_topic_status(sheet_name, topic, status):
     sheet = get_sheet(sheet_name)
     records = sheet.get_all_records()
-    for i, row in enumerate(records):
-        if row['Topic'] == topic:
-            sheet.update_cell(i + 2, 2, new_status) # Column 2 is Status
-            break
+    today_str = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d")
+    
+    for idx, row in enumerate(records):
+        if str(row.get('Topic', '')) == str(topic):
+            sheet.update_cell(idx + 2, 2, status)
+            sheet.update_cell(idx + 2, 3, today_str)  # Updates Column C
+            return
+            
+    # If the topic doesn't exist yet, append it with today's date
+    sheet.append_row([topic, status, today_str])
+
+def display_project_table(sheet_name):
+    try:
+        df = pd.DataFrame(get_sheet(sheet_name).get_all_records())
+        if not df.empty and 'Last Updated' in df.columns:
+            today = pd.to_datetime(datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d"))
+            # Convert to datetime safely, calculate difference
+            df['Last Updated'] = pd.to_datetime(df['Last Updated'], errors='coerce')
+            df['Days in Status'] = (today - df['Last Updated']).dt.days
+            # Clean up the format for display
+            df['Days in Status'] = df['Days in Status'].fillna(0).astype(int)
+            df['Last Updated'] = df['Last Updated'].dt.strftime('%Y-%m-%d')
+        st.dataframe(df, use_container_width=True, hide_index=True)
+    except Exception as e:
+        st.caption("No data or missing 'Last Updated' column yet.")
 
 # ==========================================
 # LOGIN SYSTEM
@@ -140,7 +161,25 @@ else:
         responses = {}
         uploaded_links = []
         
-        with st.form("update_form"):
+       with st.form(key="daily_update_form"):
+            responses = {}
+            
+            # --- ATTENDANCE TRACKER ---
+            st.subheader("Daily Attendance")
+            attendance = st.radio("Today's Status", ["Working normally", "Ill", "Vacation", "Others"], horizontal=True)
+            if attendance == "Others":
+                absence_reason = st.text_input("Please specify your reason:")
+                responses["Attendance Status"] = f"Others ({absence_reason})"
+            elif attendance != "Working normally":
+                responses["Attendance Status"] = attendance
+            else:
+                responses["Attendance Status"] = "Working normally"
+                
+            if attendance != "Working normally":
+                st.info("You are marked as away. You can submit this update as-is to log your absence, or add voluntary notes below.")
+                
+            st.markdown("---")
+            # ... (KEEP ALL YOUR EXISTING HEAD-SPECIFIC LOGIC HERE: Mails Sent, Current Topic, etc.) ...
             # --- HEAD OF PROJECTS ---
             if st.session_state.role == "Head of Projects":
                 st.subheader("Section 1: Projects")
@@ -264,34 +303,65 @@ else:
         tab_dash, tab_pend, tab_res = st.tabs(["📊 Analytics Dashboard", "✅ Pending Queue", "⏳ Resolution Queue"])
         
         # --- TAB 1: DASHBOARD ---
+        # --- TAB 1: DASHBOARD ---
         with tab_dash:
             st.subheader("Team Output Volume")
             if not subs_df.empty:
-                # Graph showing how many submissions each head has made
                 head_counts = subs_df['Name'].value_counts()
-                st.bar_chart(head_counts)
-                
                 col1, col2, col3, col4 = st.columns(4)
                 col1.metric("Total Submissions", len(subs_df))
                 col2.metric("Verified", len(subs_df[subs_df['Status'] == 'Verified']))
                 col3.metric("Delayed", len(subs_df[subs_df['Status'] == 'Delayed']))
                 col4.metric("Rejected", len(subs_df[subs_df['Status'] == 'Rejected']))
-            
+                
+            # --- NEW: LIVE ABSENCE TRACKER ---
             st.markdown("---")
-            st.subheader("Department Active Projects (What they are doing vs Done)")
+            st.subheader("Team Availability (Out of Office)")
+            if not subs_df.empty:
+                absence_data = []
+                # Check consecutive absence days for each user
+                for head in subs_df['Name'].unique():
+                    head_subs = subs_df[subs_df['Name'] == head].sort_values(by='Timestamp', ascending=False)
+                    consec_days = 0
+                    current_stat = "Working normally"
+                    
+                    for _, row in head_subs.iterrows():
+                        match = re.search(r'\*\*Attendance Status\*\*: (.*)', str(row['Submission_Data']))
+                        status = match.group(1) if match else "Working normally"
+                        
+                        if consec_days == 0:
+                            current_stat = status
+                            if status == "Working normally":
+                                break  # They are active, stop counting
+                        
+                        if status == current_stat:
+                            consec_days += 1
+                        else:
+                            break
+                            
+                    if current_stat != "Working normally":
+                        absence_data.append({"Name": head, "Status": current_stat, "Days Absent": consec_days})
+                        
+                if absence_data:
+                    st.table(pd.DataFrame(absence_data))
+                else:
+                    st.success("All team members are currently active and working!")
+            
+            # --- SMART PROJECT DURATIONS ---
+            st.markdown("---")
+            st.subheader("Department Active Projects & Status Durations")
             c1, c2, c3 = st.columns(3)
             with c1:
                 st.write("**Research (Industries)**")
-                try: st.dataframe(pd.DataFrame(get_sheet("Industries").get_all_records()), use_container_width=True, hide_index=True)
-                except: st.caption("No data yet.")
+                display_project_table("Industries")
             with c2:
                 st.write("**Research (Case Studies)**")
-                try: st.dataframe(pd.DataFrame(get_sheet("Case_Studies").get_all_records()), use_container_width=True, hide_index=True)
-                except: st.caption("No data yet.")
+                display_project_table("Case_Studies")
             with c3:
                 st.write("**Digital (Insight Series)**")
-                try: st.dataframe(pd.DataFrame(get_sheet("Insight_Series").get_all_records()), use_container_width=True, hide_index=True)
-                except: st.caption("No data yet.")
+                display_project_table("Insight_Series")
+                
+          
 
             # --- PROJECTS METRICS DASHBOARD ---
             st.markdown("---")
