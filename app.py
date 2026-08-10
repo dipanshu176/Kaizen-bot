@@ -251,6 +251,49 @@ else:
                 st.info("You are marked as away. You can submit this update as-is to log your absence, or add voluntary notes below.")
                 
             st.markdown("---")
+
+            is_projects_head = "Head of Projects" in st.session_state.role
+            is_research_head = "Head of Research" in st.session_state.role
+
+            if is_projects_head:
+            st.subheader("Section 2: Development Sessions")
+            
+            # Fetch topics and display dropdown
+            dev_topics = get_active_topics("Dev_Sessions")
+            dev_topic = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic (Type manually if empty)")
+            
+            # Status Selection
+            dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "took the session"])
+            
+            # Instant Pop-ups based on Status
+            dev_date = None
+            dev_link = None
+            
+            if dev_status == "took the session":
+                dev_date = st.date_input("Select Session Date")
+            elif dev_status in ["Review", "Done"]:
+                dev_link = st.text_input("🔗 Please paste the Document/Drive Link for verification:")
+
+        # ==========================================
+        # 2. HEAD OF RESEARCH LOGIC (Example for Industries)
+        # ==========================================
+        if is_research_head:
+            st.subheader("Section 2: Research Projects")
+            
+            # Fetch topics and display dropdown
+            ind_topics = get_active_topics("Industries")
+            ind_topic = st.selectbox("Current Industry", ind_topics) if ind_topics else st.text_input("Current Industry (Type manually if empty)")
+            
+            # Status Selection
+            ind_status = st.selectbox("Industry Status", ["Drafting", "Review", "Done"])
+            
+            # Instant Pop-up based on Status
+            ind_link = None
+            
+            if ind_status in ["Review", "Done"]:
+                ind_link = st.text_input("🔗 Please paste the Document/Drive Link for verification:")
+                
+            # Note: You can copy/paste this exact Research block for "Case Studies" or "Insight Series" as well!
             # ... (Your department-specific questions remain here) ...
             # ... (All of your other department-specific questions and the submit button go here!) ...
             # ... (KEEP ALL YOUR EXISTING HEAD-SPECIFIC LOGIC HERE: Mails Sent, Current Topic, etc.) ...
@@ -267,22 +310,25 @@ else:
                 responses["Projects Converted"] = col5.number_input("Projects Converted", min_value=0)
                 
                 proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
-                
+
                 st.subheader("Section 2: Development")
-                dev_topics = get_active_topics("Dev_Sessions")
-                responses["Development session Topic"] = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic (Type manually if list is empty)")
-                dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "took the session"])
+                if is_projects_head:
+                responses["Development session Topic"] = dev_topic
                 responses["Session Status"] = dev_status
-                session_date = st.date_input("Select Session Date (Ignore if not applicable)")
+                if dev_date:
+                    responses["Session Date"] = dev_date.strftime("%Y-%m-%d")
+                if dev_link:
+                    responses["Document Link"] = dev_link
                 # Only save the date to the database if they actually took the session
                 if dev_status == "took the session":
                     responses["Session Date"] = session_date.strftime("%Y-%m-%d")
             # --- HEAD OF RESEARCH ---
             elif st.session_state.role == "Head of Research":
-                st.subheader("Section 1: Industry Primer")
-                ind_topics = get_active_topics("Industries")
-                responses["Industry Topic"] = st.selectbox("Current Industry", ind_topics) if ind_topics else st.text_input("Current Industry (Type manually if list is empty)")
-                responses["Industry Status"] = st.selectbox("Industry Status", ["Drafting", "review", "done"])
+                if is_research_head:
+                responses["Industry Topic"] = ind_topic
+                responses["Industry Status"] = ind_status
+                if ind_link:
+                    responses["Document Link"] = ind_link
                 
                 st.subheader("Section 2: Case Study / Analysis")
                 case_topics = get_active_topics("Case_Studies")
