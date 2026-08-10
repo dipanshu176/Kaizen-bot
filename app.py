@@ -29,11 +29,15 @@ def get_google_credentials():
     ]
     return service_account.Credentials.from_service_account_info(creds_dict, scopes=scopes)
 
+# --- NEW: CACHED GOOGLE CONNECTION ---
+@st.cache_resource
+def connect_to_google():
+    # Keep however you are currently defining 'gc' here
+    gc = gspread.service_account_from_dict(st.secrets["gcp_service_account"]) 
+    return gc.open_by_key(st.secrets["spreadsheet_id"])
+
 def get_sheet(sheet_name):
-    creds = get_google_credentials()
-    gc = gspread.authorize(creds)
-    # Replace with your actual Spreadsheet ID
-    sh = gc.open_by_key(st.secrets["spreadsheet_id"]) 
+    sh = connect_to_google() # Uses the memory! Doesn't fetch 6 times!
     return sh.worksheet(sheet_name)
 
 def upload_to_imgbb(uploaded_file):
