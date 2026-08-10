@@ -94,6 +94,16 @@ def get_active_topics(sheet_name):
     except:
         return []
 
+def get_dev_active_topics(sheet_name):
+    try:
+        df = pd.DataFrame(get_sheet(sheet_name).get_all_records())
+        if df.empty: return []
+        # Filter out "done" or "posted" (case insensitive)
+        active = df[~df['Status'].str.lower().isin(['Drafting','Review','Done', 'Took the session'])]
+        return active['Topic'].tolist()
+    except:
+        return []
+
 def update_topic_status(sheet_name, topic, status):
     sheet = get_sheet(sheet_name)
     records = sheet.get_all_records()
