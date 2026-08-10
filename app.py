@@ -271,7 +271,8 @@ else:
                 st.subheader("Section 2: Development")
                 dev_topics = get_active_topics("Dev_Sessions")
                 responses["Development session Topic"] = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic (Type manually if list is empty)")
-                responses["Session Status"] = st.selectbox("Session Status", ["Drafting", "Review", "Done", "took the session"])
+                dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "took the session"])
+                responses["Session Status"] = dev_status
                 
                 if dev_status == "took the session":
                     responses["Session Date"] = st.date_input("Select Session Date").strftime("%Y-%m-%d")
