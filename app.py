@@ -311,7 +311,7 @@ else:
                 
                 proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
 
-                st.subheader("Section 2: Development")
+                
                 if is_projects_head:
                 responses["Development session Topic"] = dev_topic
                 responses["Session Status"] = dev_status
