@@ -120,47 +120,51 @@ def display_project_table(sheet_name):
         st.caption("No data or missing 'Last Updated' column yet.")
 
 def display_performance_leaderboard(subs_df):
-    if subs_df.empty:
-        st.info("No data available yet to calculate scores.")
-        return
-    
-    scores = []
-    # Loop through every unique Head in the database
-    for name in subs_df['Name'].unique():
-        user_data = subs_df[subs_df['Name'] == name]
+    try:
+        # Prevent crashes if the sheet is completely blank or missing columns
+        if subs_df is None or subs_df.empty or 'Name' not in subs_df.columns or 'Status' not in subs_df.columns:
+            st.info("Leaderboard will appear once data is logged.")
+            return
         
-        # Count their specific statuses
-        verified = len(user_data[user_data['Status'] == 'Verified'])
-        delayed = len(user_data[user_data['Status'] == 'Delayed'])
-        missed = len(user_data[user_data['Status'] == 'Missed Deadline'])
+        scores = []
+        # Loop through every unique Head in the database
+        for name in subs_df['Name'].unique():
+            user_data = subs_df[subs_df['Name'] == name]
+            
+            # Count their specific statuses safely
+            verified = len(user_data[user_data['Status'] == 'Verified'])
+            delayed = len(user_data[user_data['Status'] == 'Delayed'])
+            missed = len(user_data[user_data['Status'] == 'Missed Deadline'])
+            
+            # Calculate the gamified math
+            total_score = (verified * 5) + (delayed * -3) + (missed * -1)
+            
+            scores.append({
+                "Head Name": name,
+                "Total Score": total_score,
+                "Verified (+5)": verified,
+                "Delayed (-3)": delayed,
+                "Missed (-1)": missed
+            })
         
-        # Calculate the gamified math
-        total_score = (verified * 5) + (delayed * -3) + (missed * -1)
+        # Sort the dataframe from highest score to lowest
+        leaderboard_df = pd.DataFrame(scores).sort_values(by="Total Score", ascending=False).reset_index(drop=True)
         
-        scores.append({
-            "Head Name": name,
-            "Total Score": total_score,
-            "Verified (+5)": verified,
-            "Delayed (-3)": delayed,
-            "Missed (-1)": missed
-        })
-    
-    # Sort the dataframe from highest score to lowest
-    leaderboard_df = pd.DataFrame(scores).sort_values(by="Total Score", ascending=False).reset_index(drop=True)
-    
-    # Add cool medal emojis for the top 3 ranks
-    leaderboard_df.index = leaderboard_df.index + 1
-    def get_medal(rank):
-        if rank == 1: return '🥇 1'
-        if rank == 2: return '🥈 2'
-        if rank == 3: return '🥉 3'
-        return str(rank)
-    
-    leaderboard_df.insert(0, 'Rank', leaderboard_df.index.map(get_medal))
-    
-    # Display the final beautiful table
-    st.dataframe(leaderboard_df, use_container_width=True, hide_index=True)
-
+        # Add medal emojis for the top 3 ranks
+        leaderboard_df.index = leaderboard_df.index + 1
+        def get_medal(rank):
+            if rank == 1: return '🥇 1'
+            if rank == 2: return '🥈 2'
+            if rank == 3: return '🥉 3'
+            return str(rank)
+        
+        leaderboard_df.insert(0, 'Rank', leaderboard_df.index.map(get_medal))
+        
+        # Display the final beautiful table
+        st.dataframe(leaderboard_df, use_container_width=True, hide_index=True)
+        
+    except Exception as e:
+        st.caption("Leaderboard calculating... Submit an update to generate scores.")
 # ==========================================
 # LOGIN SYSTEM
 # ==========================================
@@ -200,9 +204,16 @@ else:
     # ------------------------------------------
     if "Head" in st.session_state.role:
         st.header("Daily Update Submission")
-        uploaded_links = []
-
-        # --- NEW: SHOW LEADERBOARD TO HEADS ---
+        
+        # --- NEW: FETCH DATA SAFELY ---
+        try:
+            # Connect to the sheet just for the leaderboard
+            subs_df = pd.DataFrame(get_sheet("Submissions").get_all_records())
+        except Exception:
+            # If the connection fails, create a blank dataframe to prevent crashes
+            subs_df = pd.DataFrame()
+        
+        # --- SHOW LEADERBOARD TO HEADS ---
         st.subheader("🏆 Current Rankings")
         display_performance_leaderboard(subs_df)
         st.markdown("---")
