@@ -204,6 +204,7 @@ else:
     # ------------------------------------------
     if "Head" in st.session_state.role:
         st.header("Daily Update Submission")
+        uploaded_links = []
         
         # --- NEW: FETCH DATA SAFELY ---
         try:
