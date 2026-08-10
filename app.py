@@ -256,7 +256,7 @@ else:
             is_research_head = "Head of Research" in st.session_state.role
 
             if is_projects_head:
-            st.subheader("Section 2: Development Sessions")
+                st.subheader("Section 2: Development Sessions")
             
             # Fetch topics and display dropdown
             dev_topics = get_active_topics("Dev_Sessions")
