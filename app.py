@@ -313,8 +313,8 @@ else:
 
                 
                 if is_projects_head:
-                responses["Development session Topic"] = dev_topic
-                responses["Session Status"] = dev_status
+                    responses["Development session Topic"] = dev_topic
+                    responses["Session Status"] = dev_status
                 if dev_date:
                     responses["Session Date"] = dev_date.strftime("%Y-%m-%d")
                 if dev_link:
