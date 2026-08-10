@@ -326,20 +326,30 @@ else:
             submitted = st.form_submit_button("Submit EOD Update")
             if submitted:
                 with st.spinner("Processing submission..."):
-                    if "Head of Projects" in st.session_state.role and proof_files:
-                        if responses.get("Session Status"):
-                            update_topic_status("Dev_Sessions", responses["Development session Topic"], responses["Session Status"])
-                        for f in proof_files:
-                            link = upload_to_imgbb(f)
-                            uploaded_links.append(f"Proof: {link}")
                     
+                    # --- HEAD OF PROJECTS LOGIC ---
+                    if "Head of Projects" in st.session_state.role:
+                        # 1. ALWAYS update the status in the tracker sheet (even without files)
+                        if responses.get("Session Status") and responses.get("Development session Topic"):
+                            update_topic_status("Dev_Sessions", responses["Development session Topic"], responses["Session Status"])
+                        
+                        # 2. ONLY upload files if they attached them
+                        if proof_files:
+                            for f in proof_files:
+                                link = upload_to_imgbb(f)
+                                uploaded_links.append(f"Proof: {link}")
+                    
+                    # --- COMPILE & SEND TO SUBMISSIONS SHEET ---
                     formatted_data = "\n".join([f"**{k}**: {v}" for k, v in responses.items() if v])
+                    
                     if uploaded_links:
                         formatted_data += "\n\n**Proofs:**\n" + "\n".join(uploaded_links)
                         
                     ist_now = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
                     sheet = get_sheet("Submissions")
                     sheet.append_row([ist_now, st.session_state.name, st.session_state.role, formatted_data, "Pending", "", ""])
+                    
+                    st.success("Update submitted successfully! The Advisory Board will review it.")
                     
                     if st.session_state.role == "Head of Research":
                         if responses.get("Industry Status"):
