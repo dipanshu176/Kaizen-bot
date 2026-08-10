@@ -283,7 +283,7 @@ else:
                 proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
                 
                 st.subheader("Section 2: Development")
-                dev_topics = get_active_topics("Dev_Sessions")
+                dev_topics = get_dev_active_topics("Dev_Sessions")
                 responses["Development session Topic"] = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic (Type manually if list is empty)")
                 dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "took the session"])
                 responses["Session Status"] = dev_status
