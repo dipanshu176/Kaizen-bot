@@ -269,9 +269,9 @@ else:
                 proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
                 
                 st.subheader("Section 2: Development")
-                responses["Dev Topic"] = st.text_input("PPT Topic")
-                dev_status = st.selectbox("Status", ["drafting ppt", "ppt drafted, session pending", "took the session"])
-                responses["Dev Status"] = dev_status
+                dev_topics = get_active_topics("Dev_Sessions")
+                responses["Development session Topic"] = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic (Type manually if list is empty)")
+                responses["Session Status"] = st.selectbox("Session Status", ["Drafting", "Review", "Done", "took the session"])
                 
                 if dev_status == "took the session":
                     responses["Session Date"] = st.date_input("Select Session Date").strftime("%Y-%m-%d")
