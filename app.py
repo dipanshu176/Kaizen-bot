@@ -325,8 +325,8 @@ else:
             # --- HEAD OF RESEARCH ---
             elif st.session_state.role == "Head of Research":
                 if is_research_head:
-                responses["Industry Topic"] = ind_topic
-                responses["Industry Status"] = ind_status
+                    responses["Industry Topic"] = ind_topic
+                    responses["Industry Status"] = ind_status
                 if ind_link:
                     responses["Document Link"] = ind_link
                 
