@@ -252,46 +252,7 @@ else:
                 
             st.markdown("---")
 
-            is_projects_head = "Head of Projects" in st.session_state.role
-            is_research_head = "Head of Research" in st.session_state.role
-
-            if is_projects_head:
-                st.subheader("Section 2: Development Sessions")
             
-            # Fetch topics and display dropdown
-            dev_topics = get_active_topics("Dev_Sessions")
-            dev_topic = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic (Type manually if empty)")
-            
-            # Status Selection
-            dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "took the session"])
-            
-            # Instant Pop-ups based on Status
-            dev_date = None
-            dev_link = None
-            
-            if dev_status == "took the session":
-                dev_date = st.date_input("Select Session Date")
-            elif dev_status in ["Review", "Done"]:
-                dev_link = st.text_input("🔗 Please paste the Document/Drive Link for verification:")
-
-        # ==========================================
-        # 2. HEAD OF RESEARCH LOGIC (Example for Industries)
-        # ==========================================
-        if is_research_head:
-            st.subheader("Section 2: Research Projects")
-            
-            # Fetch topics and display dropdown
-            ind_topics = get_active_topics("Industries")
-            ind_topic = st.selectbox("Current Industry", ind_topics) if ind_topics else st.text_input("Current Industry (Type manually if empty)")
-            
-            # Status Selection
-            ind_status = st.selectbox("Industry Status", ["Drafting", "Review", "Done"])
-            
-            # Instant Pop-up based on Status
-            ind_link = None
-            
-            if ind_status in ["Review", "Done"]:
-                ind_link = st.text_input("🔗 Please paste the Document/Drive Link for verification:")
                 
             # Note: You can copy/paste this exact Research block for "Case Studies" or "Insight Series" as well!
             # ... (Your department-specific questions remain here) ...
@@ -316,10 +277,7 @@ else:
                 responses["Development session Topic"] = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic (Type manually if list is empty)")
                 dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "took the session"])
                 responses["Session Status"] = dev_status
-                session_date = st.date_input("Select Session Date (Ignore if not applicable)")
-                # Only save the date to the database if they actually took the session
-                if dev_status == "took the session":
-                    responses["Session Date"] = session_date.strftime("%Y-%m-%d")
+
             # --- HEAD OF RESEARCH ---
             elif st.session_state.role == "Head of Research":
                 st.subheader("Section 1: Industry Primer")
