@@ -273,10 +273,10 @@ else:
                 responses["Development session Topic"] = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic (Type manually if list is empty)")
                 dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "took the session"])
                 responses["Session Status"] = dev_status
-                
+                session_date = st.date_input("Select Session Date (Ignore if not applicable)")
+                # Only save the date to the database if they actually took the session
                 if dev_status == "took the session":
-                    responses["Session Date"] = st.date_input("Select Session Date").strftime("%Y-%m-%d")
-
+                    responses["Session Date"] = session_date.strftime("%Y-%m-%d")
             # --- HEAD OF RESEARCH ---
             elif st.session_state.role == "Head of Research":
                 st.subheader("Section 1: Industry Primer")
