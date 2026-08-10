@@ -382,6 +382,52 @@ else:
             with c3:
                 st.write("**Digital (Insight Series)**")
                 display_project_table("Insight_Series")
+
+            st.subheader("🏆 Department Leaderboard")
+            # display_performance_leaderboard(subs_df) # (Your existing leaderboard call)
+            
+            st.markdown("---")
+            
+            # --- NEW: RETENTION & BURNOUT FLAGS ---
+            st.subheader("🚩 Retention & Burnout Alerts")
+            if not subs_df.empty:
+                import re
+                
+                # Standardize timestamps for accurate 30-day math
+                subs_df['Date_Obj'] = pd.to_datetime(subs_df['Timestamp'], errors='coerce')
+                today_dt = pd.to_datetime(datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d"))
+                thirty_days_ago = today_dt - timedelta(days=30)
+                
+                flags_triggered = False
+                
+                for head in subs_df['Name'].unique():
+                    head_df = subs_df[subs_df['Name'] == head].sort_values(by="Date_Obj", ascending=False)
+                    if head_df.empty:
+                        continue
+                    
+                    # FLAG 1: Extended Leave Warning (>= 4 Days declared on latest entry)
+                    latest_sub = head_df.iloc[0]
+                    status_text = str(latest_sub.get('Submission_Data', ''))
+                    leave_match = re.search(r'Expected return in: (\d+)', status_text)
+                    
+                    if leave_match:
+                        leave_days = int(leave_match.group(1))
+                        if leave_days >= 4:
+                            st.error(f"**Action Required for {head}:** Declared an extended absence of {leave_days} days. *Recommendation: Review active projects and reallocate deliverables to prevent bottlenecks.*")
+                            flags_triggered = True
+                            
+                    # FLAG 2: Rolling 30-Day Performance Drop (4+ Delays/Rejects)
+                    head_30d = head_df[head_df['Date_Obj'] >= thirty_days_ago]
+                    struggle_count = len(head_30d[head_30d['Status'].isin(['Delayed', 'Rejected'])])
+                    
+                    if struggle_count >= 4:
+                        st.error(f"**Check-in Recommended for {head}:** Accumulated **{struggle_count} Delays/Rejections** in the last 30 days. *Recommendation: Schedule a 1-on-1 to discuss operational blockers and realign expectations.*")
+                        flags_triggered = True
+                
+                if not flags_triggered:
+                    st.success("✅ Team stability is strong. No retention or burnout risks detected across the Heads.")
+            
+            st.markdown("---")
                 
           
 
