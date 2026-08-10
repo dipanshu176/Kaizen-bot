@@ -103,7 +103,7 @@ if current_hour in [0,1,2]:
             # Inject the -1 Penalty Row directly into the Google Sheet
             # Note: Ensure these 5 columns match the exact layout of your Submissions sheet
             sheet.append_row([yesterday_date, head['Name'], head['Role'], "System Auto-Log: Failed to submit EOD update.", "Missed Deadline"])
-            
+            time.sleep(2)
             print(f"Warning sent and penalty logged for {head['Name']}")
 
 # ==========================================
