@@ -327,6 +327,8 @@ else:
             if submitted:
                 with st.spinner("Processing submission..."):
                     if "Head of Projects" in st.session_state.role and proof_files:
+                        if responses.get("Session Status"):
+                            update_topic_status("Dev_Sessions", responses["Development session Topic"], responses["Session Status"])
                         for f in proof_files:
                             link = upload_to_imgbb(f)
                             uploaded_links.append(f"Proof: {link}")
