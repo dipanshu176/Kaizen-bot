@@ -119,6 +119,48 @@ def display_project_table(sheet_name):
     except Exception as e:
         st.caption("No data or missing 'Last Updated' column yet.")
 
+def display_performance_leaderboard(subs_df):
+    if subs_df.empty:
+        st.info("No data available yet to calculate scores.")
+        return
+    
+    scores = []
+    # Loop through every unique Head in the database
+    for name in subs_df['Name'].unique():
+        user_data = subs_df[subs_df['Name'] == name]
+        
+        # Count their specific statuses
+        verified = len(user_data[user_data['Status'] == 'Verified'])
+        delayed = len(user_data[user_data['Status'] == 'Delayed'])
+        missed = len(user_data[user_data['Status'] == 'Missed Deadline'])
+        
+        # Calculate the gamified math
+        total_score = (verified * 5) + (delayed * -3) + (missed * -1)
+        
+        scores.append({
+            "Head Name": name,
+            "Total Score": total_score,
+            "Verified (+5)": verified,
+            "Delayed (-3)": delayed,
+            "Missed (-1)": missed
+        })
+    
+    # Sort the dataframe from highest score to lowest
+    leaderboard_df = pd.DataFrame(scores).sort_values(by="Total Score", ascending=False).reset_index(drop=True)
+    
+    # Add cool medal emojis for the top 3 ranks
+    leaderboard_df.index = leaderboard_df.index + 1
+    def get_medal(rank):
+        if rank == 1: return '🥇 1'
+        if rank == 2: return '🥈 2'
+        if rank == 3: return '🥉 3'
+        return str(rank)
+    
+    leaderboard_df.insert(0, 'Rank', leaderboard_df.index.map(get_medal))
+    
+    # Display the final beautiful table
+    st.dataframe(leaderboard_df, use_container_width=True, hide_index=True)
+
 # ==========================================
 # LOGIN SYSTEM
 # ==========================================
@@ -159,9 +201,13 @@ else:
     if "Head" in st.session_state.role:
         st.header("Daily Update Submission")
         uploaded_links = []
+
+        # --- NEW: SHOW LEADERBOARD TO HEADS ---
+        st.subheader("🏆 Current Rankings")
+        display_performance_leaderboard(subs_df)
+        st.markdown("---")
+        # --- ATTENDANCE TRACKER (Moved OUTSIDE the form for instant updates) ---
         
-        # --- ATTENDANCE TRACKER (Moved OUTSIDE the form for instant updates) ---
-        # --- ATTENDANCE TRACKER (Moved OUTSIDE the form for instant updates) ---
         st.subheader("Daily Attendance")
         attendance = st.radio("Today's Status", ["Working normally", "Ill", "Vacation", "Others"], horizontal=True)
         
@@ -327,6 +373,10 @@ else:
         # --- TAB 1: DASHBOARD ---
         # --- TAB 1: DASHBOARD ---
         with tab_dash:
+            st.subheader("🏆 Department Leaderboard")
+            display_performance_leaderboard(subs_df)
+            
+            st.markdown("---")
             st.subheader("Team Output Volume")
             if not subs_df.empty:
                 head_counts = subs_df['Name'].value_counts()
