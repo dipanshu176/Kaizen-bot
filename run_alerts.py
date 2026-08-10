@@ -4,6 +4,7 @@ from email.message import EmailMessage
 import gspread
 import pandas as pd
 from datetime import datetime
+import re
 import pytz
 import json
 import pytz
@@ -49,6 +50,7 @@ if current_hour in [0,1,2]:
     # Check if they have an entry in the sheet with today's date
     subs_data = sheet.get_all_records()
     subs_df = pd.DataFrame(subs_data)
+    
     # We must check YESTERDAY'S date because it is currently past midnight
     yesterday_date = (ist_now - timedelta(days=1)).strftime("%Y-%m-%d")
     
@@ -62,9 +64,47 @@ if current_hour in [0,1,2]:
     
     for _, head in heads.iterrows():
         if head['Name'] not in submitted_names:
-            body = f"Hi {head['Name']},\n\nYou missed your EOD update deadline for {today_date}. Please update the Kaizen Portal immediately."
+            
+            # --- ADDED: LEAVE IMMUNITY CHECK ---
+            on_leave = False
+            if not subs_df.empty:
+                # Pull this specific Head's entire history
+                head_history = subs_df[subs_df['Name'] == head['Name']].sort_values(by='Timestamp', ascending=False)
+                if not head_history.empty:
+                    last_sub = head_history.iloc[0]
+                    status_text = str(last_sub.get('Submission_Data', ''))
+                    
+                    # Scan their last submission for the expected return days
+                    match = re.search(r'Expected return in: (\d+)', status_text)
+                    if match:
+                        leave_days = int(match.group(1))
+                        last_date_str = str(last_sub['Timestamp']).split(' ')[0]
+                        try:
+                            # Calculate exactly when they are supposed to return
+                            last_date = datetime.strptime(last_date_str, "%Y-%m-%d").date()
+                            return_date = last_date + timedelta(days=leave_days)
+                            
+                            # Check if today is still covered by their leave
+                            if ist_now.date() < return_date:
+                                on_leave = True
+                        except Exception:
+                            pass 
+            
+            if on_leave:
+                print(f"Skipping {head['Name']} - currently on approved leave.")
+                continue # Stops right here, bypassing the email and penalty!
+            # -----------------------------------
+            
+            # --- MODIFIED: EMAIL & PENALTY LOGGING ---
+            # Email body updated to explicitly state 'yesterday_date'
+            body = f"Hi {head['Name']},\n\nYou missed your EOD update deadline for {yesterday_date}. Please update the Kaizen Portal immediately."
             send_email(head['Email'], "ACTION REQUIRED: Missing EOD Update", body)
-            print(f"Warning sent to {head['Name']}")
+            
+            # Inject the -1 Penalty Row directly into the Google Sheet
+            # Note: Ensure these 5 columns match the exact layout of your Submissions sheet
+            sheet.append_row([yesterday_date, head['Name'], head['Role'], "System Auto-Log: Failed to submit EOD update.", "Missed Deadline"])
+            
+            print(f"Warning sent and penalty logged for {head['Name']}")
 
 # ==========================================
 # 12:00 PM LOGIC: Did Senior Core verify yesterday's?
