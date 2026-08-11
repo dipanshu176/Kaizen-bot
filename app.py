@@ -384,7 +384,7 @@ else:
                 responses["Projects Converted"] = col5.number_input("Projects Converted", min_value=0)
                 
                 proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
-                
+            if is_projects_head:
                 st.subheader("Section 2: Development Sessions")
             
                 dev_topics = get_dev_active_topics("Dev_Sessions")
