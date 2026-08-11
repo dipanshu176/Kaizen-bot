@@ -317,14 +317,14 @@ else:
             # ... (All of your other department-specific questions and the submit button go here!) ...
             # ... (KEEP ALL YOUR EXISTING HEAD-SPECIFIC LOGIC HERE: Mails Sent, Current Topic, etc.) ...
             # --- HEAD OF PROJECTS ---
-            if st.session_state.role == "Head of Projects":
-                st.subheader("Section 1: Projects")
-                col1, col2, col3 = st.columns(3)
-                responses["Mails Sent"] = col1.number_input("Mails Sent", min_value=0)
-                responses["Calls Done"] = col2.number_input("Calls Done", min_value=0)
-                responses["LinkedIn Msgs"] = col3.number_input("LinkedIn Messages", min_value=0)
+        if st.session_state.role == "Head of Projects":
+            st.subheader("Section 1: Projects")
+            col1, col2, col3 = st.columns(3)
+            responses["Mails Sent"] = col1.number_input("Mails Sent", min_value=0)
+            responses["Calls Done"] = col2.number_input("Calls Done", min_value=0)
+            responses["LinkedIn Msgs"] = col3.number_input("LinkedIn Messages", min_value=0)
                 
-                col4, col5 = st.columns(2)
+            col4, col5 = st.columns(2)
                 responses["Meetings Done"] = col4.number_input("Meetings Done", min_value=0)
                 responses["Projects Converted"] = col5.number_input("Projects Converted", min_value=0)
                 
