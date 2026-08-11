@@ -401,10 +401,10 @@ else:
                         u_df = pd.DataFrame(get_sheet("Users").get_all_records())
                         u_df.columns = u_df.columns.str.strip()
                         # Filter dynamically for Head, Advisory board, or Director
-                    pattern = "head|advisory board|director"
-                    eligible_users = u_df[u_df['Role'].str.contains(pattern, case=False, na=False)]['Name'].tolist()
+                        pattern = "head|advisory board|director"
+                        eligible_users = u_df[u_df['Role'].str.contains(pattern, case=False, na=False)]['Name'].tolist()
                     except Exception:
-                    eligible_users = []
+                        eligible_users = []
                 
                     st.write("---")
                     dev_taken_list = st.multiselect("Who took the session? (Select all that apply):", eligible_users)
