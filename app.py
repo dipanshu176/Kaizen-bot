@@ -384,7 +384,7 @@ else:
                 responses["Projects Converted"] = col5.number_input("Projects Converted", min_value=0)
                 
                 proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
-            if is_projects_head:
+            
                 st.subheader("Section 2: Development Sessions")
             
                 dev_topics = get_dev_active_topics("Dev_Sessions")
@@ -451,14 +451,20 @@ else:
                     
                     # --- HEAD OF PROJECTS LOGIC ---
                     if "Head of Projects" in st.session_state.role:
+                        if dev_status and dev_topic:
+                            responses["Development session Topic"] = dev_topic
+                            responses["Session Status"] = dev_status
                         # 1. ALWAYS update the status in the tracker sheet (even without files)
-                        if responses.get("Session Status") and responses.get("Development session Topic"):
+                       
                             final_taken_by = ""
-                            if responses.get("Session Status") == "Took the session":
+                            if dev_status == "Took the session":
                                 combined_names = dev_taken_list.copy()
                                 if dev_taken_manual.strip():
                                     combined_names.append(dev_taken_manual.strip())
                                 final_taken_by = ", ".join(combined_names)
+
+                                if final_taken_by:
+                                    responses["Taken By"] = final_taken_by
                             
                             # Use our new dedicated Dev update function!
                             update_dev_topic_status(responses["Development session Topic"], responses["Session Status"], final_taken_by)
