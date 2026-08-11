@@ -15,6 +15,7 @@ import requests
 import base64
 import re
 import uuid
+import time
 
 # ==========================================
 # CONFIGURATION & AUTHENTICATION
@@ -37,9 +38,19 @@ def connect_to_google():
     gc = gspread.service_account_from_dict(st.secrets["gcp_service_account"]) 
     return gc.open_by_key(st.secrets["spreadsheet_id"])
 
+# --- UPDATED GET_SHEET WITH AUTOMATIC RETRY ---
 def get_sheet(sheet_name):
-    sh = connect_to_google() # Uses the memory! Doesn't fetch 6 times!
-    return sh.worksheet(sheet_name)
+    sh = connect_to_google()
+    
+    # Try to open the sheet up to 3 times before giving up
+    for attempt in range(3):
+        try:
+            return sh.worksheet(sheet_name)
+        except Exception as e:
+            if attempt < 2:
+                time.sleep(2) # Wait exactly 2 seconds and try again
+            else:
+                raise e # If it fails 3 times, then show the error
 
 def generate_task_id():
     # Creates a short, random ID like #TASK-8A2F
