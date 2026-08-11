@@ -384,49 +384,27 @@ else:
                 responses["Projects Converted"] = col5.number_input("Projects Converted", min_value=0)
                 
                 proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
-            
+                
                 st.subheader("Section 2: Development Sessions")
             
                 dev_topics = get_dev_active_topics("Dev_Sessions")
+                dev_topic = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic")
             
-                # ADDED KEY: Locks this widget in memory so it never resets
-                if dev_topics:
-                    dev_topic = st.selectbox("Current Topic", dev_topics, key="dev_topic_select")
-                else:
-                    dev_topic = st.text_input("Current Topic (Type manually if empty)", key="dev_topic_text")
+                dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "Took the session"])
             
-                # ADDED KEY: This is the magic fix that prevents the dropdown from resetting!
-                dev_status = st.selectbox("Session Status", 
-                                          ["Drafting", "Review", "Done", "Took the session"], 
-                                          key="dev_status_select")
+            # Show the boxes permanently, but they only matter if they select "Took the session"
+                st.markdown("*(If you selected 'Took the session', please fill out below)*")
             
-                dev_taken_list = []
-                dev_taken_manual = ""
-            
-                # .strip().lower() makes it 100% immune to invisible spaces!
-                if dev_status.strip().lower() == "took the session":
-                
-                    if "eligible_leaders" not in st.session_state:
-                        try:
-                            u_df = pd.DataFrame(get_sheet("Users").get_all_records())
-                            u_df.columns = u_df.columns.str.strip()
-                            pattern = "head|advisory board|director"
-                            st.session_state.eligible_leaders = u_df[u_df['Role'].str.contains(pattern, case=False, na=False)]['Name'].tolist()
-                        except Exception:
-                            st.session_state.eligible_leaders = []
-                
-                    st.write("---")
-                    if len(st.session_state.eligible_leaders) > 0:
-                        # ADDED KEY here too!
-                        dev_taken_list = st.multiselect("Who took the session? (Select all that apply):", 
-                                                        st.session_state.eligible_leaders,
-                                                        key="dev_multi_select")
-                    else:
-                        st.warning("Loading names from Google Sheets... please refresh.")
+                if "eligible_leaders" not in st.session_state:
+                    try:
+                        u_df = pd.DataFrame(get_sheet("Users").get_all_records())
+                        u_df.columns = u_df.columns.str.strip()
+                        st.session_state.eligible_leaders = u_df[u_df['Role'].str.contains("head|advisory board|director", case=False, na=False)]['Name'].tolist()
+                    except:
+                        st.session_state.eligible_leaders = []
                     
-                    dev_taken_manual = st.text_input("Other senior members (Type names manually, if any):", 
-                                                 key="dev_manual_text")
-                    st.write("---")
+                dev_taken_list = st.multiselect("Who took the session?", st.session_state.eligible_leaders)
+                dev_taken_manual = st.text_input("Other senior members (if any):")    
             # --- HEAD OF RESEARCH ---
             elif st.session_state.role == "Head of Research":
                 st.subheader("Section 1: Industry Primer")
