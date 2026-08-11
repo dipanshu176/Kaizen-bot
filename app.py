@@ -767,36 +767,51 @@ else:
 
             # --- PART 1: ASSIGN NEW TASKS ---
             with st.expander("➕ Assign a New Task", expanded=True):
-                # Fetch the Users sheet so Python knows exactly who the Heads are
-                try:
-                    users_df = pd.DataFrame(get_sheet("Users").get_all_records())
-                    # na=False prevents crashes if there is a blank row in your sheet
-                    all_heads_names = users_df[users_df['Role'].str.contains("Head", na=False)]['Name'].tolist()
-                except Exception:
-                    all_heads_names = []
+                # 1. Safe default variables so it NEVER crashes
+                selected_heads = []
+                task_details = ""
+                all_heads_names = []
                 
-                if st.button("Assign Task"):
-                    if selected_heads and task_details:
-                        tasks_sheet = get_sheet("Tasks")
-                        ist_now = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
-                        
-                        for head in selected_heads:
-                            task_id = generate_task_id()
-                            tasks_sheet.append_row([task_id, ist_now, st.session_state.name, head, task_details, "Assigned", ""])
+                # 2. Safely fetch Users and clean the data
+                try:
+                    users_df_tasks = pd.DataFrame(get_sheet("Users").get_all_records())
+                    # Clean column names in case there are invisible spaces in Google Sheets
+                    users_df_tasks.columns = users_df_tasks.columns.str.strip()
+                    # Find roles containing "head" (case-insensitive)
+                    heads_df = users_df_tasks[users_df_tasks['Role'].str.contains("head", case=False, na=False)]
+                    all_heads_names = heads_df['Name'].tolist()
+                except Exception:
+                    st.warning("⚠️ Google Sheets rate limit reached. Waiting for connection...")
+                
+                # 3. Only show the form if we successfully got the names
+                if len(all_heads_names) > 0:
+                    selected_heads = st.multiselect("Assign to:", all_heads_names)
+                    task_details = st.text_area("Task Details & Instructions:")
+                    
+                    if st.button("Assign Task"):
+                        if selected_heads and task_details:
+                            tasks_sheet = get_sheet("Tasks")
+                            ist_now = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
                             
-                            # Send Instant Email
-                            head_email = users_df[users_df['Name'] == head]['Email'].values[0]
-                            subject = f"ACTION REQUIRED: New Task Assigned ({task_id})"
-                            body = f"Hi {head},\n\nYou have been assigned a new task by {st.session_state.name}:\n\n'{task_details}'\n\nPlease log into the Kaizen Portal to view and complete it."
-                            send_email(head_email, subject, body)
-                            
-                        st.success("Task(s) assigned and email notifications sent!")
-                        st.rerun()
-                    else:
-                        st.error("Please select at least one Head and enter task details.")
-
-            st.markdown("---")
-            
+                            for head in selected_heads:
+                                task_id = generate_task_id()
+                                tasks_sheet.append_row([task_id, ist_now, st.session_state.name, head, task_details, "Assigned", ""])
+                                
+                                # Send Instant Email Safely
+                                try:
+                                    head_email = users_df_tasks[users_df_tasks['Name'] == head]['Email'].values[0]
+                                    subject = f"ACTION REQUIRED: New Task Assigned ({task_id})"
+                                    body = f"Hi {head},\n\nYou have been assigned a new task by {st.session_state.name}:\n\n'{task_details}'\n\nPlease log into the Kaizen Portal to view and complete it."
+                                    send_email(head_email, subject, body)
+                                except Exception:
+                                    pass # If the email fails, the app still won't crash
+                                
+                            st.success("Task(s) assigned successfully!")
+                            st.rerun()
+                        else:
+                            st.error("Please select at least one Head and enter task details.")
+                else:
+                    st.info("Loading Heads... If this takes too long, wait exactly 60 seconds and refresh the page.")            
             # --- PART 2: PENDING VERIFICATIONS ---
             st.subheader("👀 Verify Completed Tasks")
             if not tasks_df.empty and 'Status' in tasks_df.columns:
