@@ -767,10 +767,13 @@ else:
 
             # --- PART 1: ASSIGN NEW TASKS ---
             with st.expander("➕ Assign a New Task", expanded=True):
-                all_heads_names = users_df[users_df['Role'].str.contains("Head")]['Name'].tolist()
-                
-                selected_heads = st.multiselect("Assign to:", all_heads_names)
-                task_details = st.text_area("Task Details & Instructions:")
+                # Fetch the Users sheet so Python knows exactly who the Heads are
+                try:
+                    users_df = pd.DataFrame(get_sheet("Users").get_all_records())
+                    # na=False prevents crashes if there is a blank row in your sheet
+                    all_heads_names = users_df[users_df['Role'].str.contains("Head", na=False)]['Name'].tolist()
+                except Exception:
+                    all_heads_names = []
                 
                 if st.button("Assign Task"):
                     if selected_heads and task_details:
