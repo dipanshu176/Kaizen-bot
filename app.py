@@ -14,7 +14,6 @@ from googleapiclient.errors import HttpError
 import requests
 import base64
 import re
-import uuid
 
 # ==========================================
 # CONFIGURATION & AUTHENTICATION
@@ -36,20 +35,6 @@ def connect_to_google():
     # Keep however you are currently defining 'gc' here
     gc = gspread.service_account_from_dict(st.secrets["gcp_service_account"]) 
     return gc.open_by_key(st.secrets["spreadsheet_id"])
-
-def generate_task_id():
-    # Creates a short, random ID like #TASK-8A2F
-    return f"#TASK-{str(uuid.uuid4())[:4].upper()}"
-
-def update_task_in_sheet(task_id, new_status, feedback=""):
-    tasks_sheet = get_sheet("Tasks")
-    records = tasks_sheet.get_all_records()
-    for i, row in enumerate(records):
-        if str(row.get("Task ID")) == str(task_id):
-            row_idx = i + 2 # Google Sheets is 1-indexed, and we skip the header
-            tasks_sheet.update_cell(row_idx, 6, new_status) # Col 6 is Status
-            tasks_sheet.update_cell(row_idx, 7, feedback)   # Col 7 is Feedback
-            break
 
 def get_sheet(sheet_name):
     sh = connect_to_google() # Uses the memory! Doesn't fetch 6 times!
@@ -277,39 +262,6 @@ else:
                 
             st.markdown("---")
 
-        # --- NEW: ACTIVE TASKS BOARD ---
-        st.subheader("🎯 My Active Tasks")
-        try:
-            tasks_df = pd.DataFrame(get_sheet("Tasks").get_all_records())
-        except Exception:
-            tasks_df = pd.DataFrame()
-
-        if not tasks_df.empty and 'Assigned To' in tasks_df.columns:
-            # Show tasks that are Assigned or Rejected (Needs fixing)
-            my_tasks = tasks_df[(tasks_df['Assigned To'] == st.session_state.name) & (tasks_df['Status'].isin(['Assigned', 'Rejected']))]
-            
-            if my_tasks.empty:
-                st.success("✅ You have no active tasks pending. Great job!")
-            else:
-                for _, task in my_tasks.iterrows():
-                    # Calculate Days Pending dynamically
-                    task_date = datetime.strptime(str(task['Timestamp']), "%Y-%m-%d %H:%M:%S")
-                    days_pending = (datetime.now() - task_date).days
-                    
-                    with st.expander(f"Task: {str(task['Task Details'])[:30]}... | Pending: {days_pending} days", expanded=True):
-                        st.write(f"**Assigned by:** {task['Assigned By']} | **Task ID:** {task['Task ID']}")
-                        st.info(f"{task['Task Details']}")
-                        
-                        # Show the red feedback note if it was rejected!
-                        if task['Status'] == 'Rejected':
-                            st.error(f"**Feedback from Core:** {task['Feedback']}")
-                            
-                        if st.button(f"Mark Completed", key=f"complete_{task['Task ID']}"):
-                            update_task_in_sheet(task['Task ID'], "Pending Verification")
-                            st.success("Sent to Senior Core for verification!")
-                            st.rerun()
-        st.markdown("---")
-
             
                 
             # Note: You can copy/paste this exact Research block for "Case Studies" or "Insight Series" as well!
@@ -317,18 +269,18 @@ else:
             # ... (All of your other department-specific questions and the submit button go here!) ...
             # ... (KEEP ALL YOUR EXISTING HEAD-SPECIFIC LOGIC HERE: Mails Sent, Current Topic, etc.) ...
             # --- HEAD OF PROJECTS ---
-        if st.session_state.role == "Head of Projects":
-            st.subheader("Section 1: Projects")
-            col1, col2, col3 = st.columns(3)
-            responses["Mails Sent"] = col1.number_input("Mails Sent", min_value=0)
-            responses["Calls Done"] = col2.number_input("Calls Done", min_value=0)
-            responses["LinkedIn Msgs"] = col3.number_input("LinkedIn Messages", min_value=0)
+            if st.session_state.role == "Head of Projects":
+                st.subheader("Section 1: Projects")
+                col1, col2, col3 = st.columns(3)
+                responses["Mails Sent"] = col1.number_input("Mails Sent", min_value=0)
+                responses["Calls Done"] = col2.number_input("Calls Done", min_value=0)
+                responses["LinkedIn Msgs"] = col3.number_input("LinkedIn Messages", min_value=0)
                 
-            col4, col5 = st.columns(2)
-            responses["Meetings Done"] = col4.number_input("Meetings Done", min_value=0)
-            responses["Projects Converted"] = col5.number_input("Projects Converted", min_value=0)
+                col4, col5 = st.columns(2)
+                responses["Meetings Done"] = col4.number_input("Meetings Done", min_value=0)
+                responses["Projects Converted"] = col5.number_input("Projects Converted", min_value=0)
                 
-            proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
+                proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
                 
                 st.subheader("Section 2: Development")
                 dev_topics = get_dev_active_topics("Dev_Sessions")
@@ -751,73 +703,3 @@ else:
                                     for url in urls: st.image(url, width=400)
                 else:
                     st.info("No actions have been logged yet.")
-
-        # --- TAB: TASK DELEGATION ---
-        with tab_tasks:
-            st.header("🎯 Task Delegation Hub")
-            
-            try:
-                tasks_df = pd.DataFrame(get_sheet("Tasks").get_all_records())
-            except Exception:
-                tasks_df = pd.DataFrame()
-
-            # --- PART 1: ASSIGN NEW TASKS ---
-            with st.expander("➕ Assign a New Task", expanded=True):
-                all_heads_names = users_df[users_df['Role'].str.contains("Head")]['Name'].tolist()
-                
-                selected_heads = st.multiselect("Assign to:", all_heads_names)
-                task_details = st.text_area("Task Details & Instructions:")
-                
-                if st.button("Assign Task"):
-                    if selected_heads and task_details:
-                        tasks_sheet = get_sheet("Tasks")
-                        ist_now = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
-                        
-                        for head in selected_heads:
-                            task_id = generate_task_id()
-                            tasks_sheet.append_row([task_id, ist_now, st.session_state.name, head, task_details, "Assigned", ""])
-                            
-                            # Send Instant Email
-                            head_email = users_df[users_df['Name'] == head]['Email'].values[0]
-                            subject = f"ACTION REQUIRED: New Task Assigned ({task_id})"
-                            body = f"Hi {head},\n\nYou have been assigned a new task by {st.session_state.name}:\n\n'{task_details}'\n\nPlease log into the Kaizen Portal to view and complete it."
-                            send_email(head_email, subject, body)
-                            
-                        st.success("Task(s) assigned and email notifications sent!")
-                        st.rerun()
-                    else:
-                        st.error("Please select at least one Head and enter task details.")
-
-            st.markdown("---")
-            
-            # --- PART 2: PENDING VERIFICATIONS ---
-            st.subheader("👀 Verify Completed Tasks")
-            if not tasks_df.empty and 'Status' in tasks_df.columns:
-                pending_tasks = tasks_df[tasks_df['Status'] == 'Pending Verification']
-                
-                if pending_tasks.empty:
-                    st.info("No tasks are currently waiting for your verification.")
-                else:
-                    for _, task in pending_tasks.iterrows():
-                        with st.container():
-                            st.markdown(f"**{task['Task ID']}** | Assigned to: **{task['Assigned To']}**")
-                            st.info(task['Task Details'])
-                            
-                            col1, col2 = st.columns(2)
-                            # Verify Button
-                            if col1.button(f"✅ Approve (Done)", key=f"approve_{task['Task ID']}"):
-                                update_task_in_sheet(task['Task ID'], "Verified")
-                                st.success("Task verified and closed!")
-                                st.rerun()
-                                
-                            # Reject Button logic (Shows a text box if clicked)
-                            reject_toggle = col2.checkbox("❌ Reject / Needs Work", key=f"toggle_{task['Task ID']}")
-                            if reject_toggle:
-                                feedback_note = st.text_input("Feedback Note:", key=f"note_{task['Task ID']}")
-                                if st.button("Send Back to Head", key=f"sendback_{task['Task ID']}"):
-                                    if feedback_note:
-                                        update_task_in_sheet(task['Task ID'], "Rejected", feedback_note)
-                                        st.rerun()
-                                    else:
-                                        st.warning("Please provide a feedback note so they know what to fix.")
-                            st.write("---")
