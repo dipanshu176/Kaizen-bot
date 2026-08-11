@@ -16,7 +16,6 @@ import base64
 import re
 import uuid
 import time
-from run_alerts import send_email
 
 # ==========================================
 # CONFIGURATION & AUTHENTICATION
