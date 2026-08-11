@@ -812,12 +812,18 @@ else:
                                 
                                 # Send Instant Email Safely
                                 try:
-                                    head_email = users_df_tasks[users_df_tasks['Name'] == head]['Email'].values[0]
+                                    # Strip spaces from the Name column to guarantee a perfect match
+                                    users_df_tasks['Name'] = users_df_tasks['Name'].astype(str).str.strip()
+                                    head_clean = str(head).strip()
+                                    
+                                    head_email = users_df_tasks[users_df_tasks['Name'] == head_clean]['Email'].values[0]
+                                    
                                     subject = f"ACTION REQUIRED: New Task Assigned ({task_id})"
-                                    body = f"Hi {head},\n\nYou have been assigned a new task by {st.session_state.name}:\n\n'{task_details}'\n\nPlease log into the Kaizen Portal to view and complete it."
+                                    body = f"Hi {head_clean},\n\nYou have been assigned a new task by {st.session_state.name}:\n\n'{task_details}'\n\nPlease log into the Kaizen Portal to view and complete it."
+                                    
                                     send_email(head_email, subject, body)
-                                except Exception:
-                                    pass # If the email fails, the app still won't crash
+                                except Exception as e:
+                                    st.error(f"Task saved, but email alert failed to send: {e}")
                                 
                             st.success("Task(s) assigned successfully!")
                             st.rerun()
@@ -852,6 +858,21 @@ else:
                                 if st.button("Send Back to Head", key=f"sendback_{task['Task ID']}"):
                                     if feedback_note:
                                         update_task_in_sheet(task['Task ID'], "Rejected", feedback_note)
+                                        try:
+                                            # Fetch users to get the email address safely
+                                            users_df_verify = pd.DataFrame(get_sheet("Users").get_all_records())
+                                            users_df_verify.columns = users_df_verify.columns.str.strip()
+                                            users_df_verify['Name'] = users_df_verify['Name'].astype(str).str.strip()
+                                            
+                                            assignee_clean = str(task['Assigned To']).strip()
+                                            head_email = users_df_verify[users_df_verify['Name'] == assignee_clean]['Email'].values[0]
+                                            
+                                            subject = f"TASK REJECTED: Revisions needed for {task['Task ID']}"
+                                            body = f"Hi {assignee_clean},\n\nYour task has been reviewed by {st.session_state.name} and requires revisions.\n\nFeedback: '{feedback_note}'\n\nPlease log into the Kaizen Portal to update it."
+                                            send_email(head_email, subject, body)
+                                            
+                                        except Exception as e:
+                                            st.warning(f"Status updated, but email alert failed: {e}")
                                         st.rerun()
                                     else:
                                         st.warning("Please provide a feedback note so they know what to fix.")
