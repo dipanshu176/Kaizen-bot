@@ -109,6 +109,41 @@ def get_active_topics(sheet_name):
     except:
         return []
 
+def display_head_active_tasks():
+    st.subheader("🎯 My Active Tasks")
+    try:
+        tasks_df = pd.DataFrame(get_sheet("Tasks").get_all_records())
+    except Exception:
+        tasks_df = pd.DataFrame()
+
+    if not tasks_df.empty and 'Assigned To' in tasks_df.columns:
+        # Show tasks that are Assigned or Rejected
+        my_tasks = tasks_df[(tasks_df['Assigned To'] == st.session_state.name) & (tasks_df['Status'].isin(['Assigned', 'Rejected']))]
+        
+        if my_tasks.empty:
+            st.success("✅ You have no active tasks pending. Great job!")
+        else:
+            for _, task in my_tasks.iterrows():
+                # Calculate Days Pending safely
+                try:
+                    task_date = datetime.strptime(str(task['Timestamp']), "%Y-%m-%d %H:%M:%S")
+                    days_pending = (datetime.now() - task_date).days
+                except:
+                    days_pending = 0
+                
+                with st.expander(f"Task: {str(task['Task Details'])[:30]}... | Pending: {days_pending} days", expanded=True):
+                    st.write(f"**Assigned by:** {task['Assigned By']} | **Task ID:** {task['Task ID']}")
+                    st.info(f"{task['Task Details']}")
+                    
+                    if task['Status'] == 'Rejected':
+                        st.error(f"**Feedback from Core:** {task['Feedback']}")
+                        
+                    if st.button(f"Mark Completed", key=f"complete_{task['Task ID']}"):
+                        update_task_in_sheet(task['Task ID'], "Pending Verification")
+                        st.success("Sent to Senior Core for verification!")
+                        st.rerun()
+    st.markdown("---")
+
 def get_dev_active_topics(sheet_name):
     try:
         df = pd.DataFrame(get_sheet(sheet_name).get_all_records())
@@ -248,6 +283,7 @@ else:
         display_performance_leaderboard(subs_df)
         st.markdown("---")
         # --- ATTENDANCE TRACKER (Moved OUTSIDE the form for instant updates) ---
+        display_head_active_tasks()
         
         st.subheader("Daily Attendance")
         attendance = st.radio("Today's Status", ["Working normally", "Ill", "Vacation", "Others"], horizontal=True)
@@ -276,38 +312,7 @@ else:
                 st.info("You are marked as away. You can submit this update as-is to log your absence, or add voluntary notes below.")
                 
             st.markdown("---")
-        # --- NEW: ACTIVE TASKS BOARD ---
-        st.subheader("🎯 My Active Tasks")
-        try:
-            tasks_df = pd.DataFrame(get_sheet("Tasks").get_all_records())
-        except Exception:
-            tasks_df = pd.DataFrame()
-
-        if not tasks_df.empty and 'Assigned To' in tasks_df.columns:
-            # Show tasks that are Assigned or Rejected (Needs fixing)
-            my_tasks = tasks_df[(tasks_df['Assigned To'] == st.session_state.name) & (tasks_df['Status'].isin(['Assigned', 'Rejected']))]
-            
-            if my_tasks.empty:
-                st.success("✅ You have no active tasks pending. Great job!")
-            else:
-                for _, task in my_tasks.iterrows():
-                    # Calculate Days Pending dynamically
-                    task_date = datetime.strptime(str(task['Timestamp']), "%Y-%m-%d %H:%M:%S")
-                    days_pending = (datetime.now() - task_date).days
-                    
-                    with st.expander(f"Task: {str(task['Task Details'])[:30]}... | Pending: {days_pending} days", expanded=True):
-                        st.write(f"**Assigned by:** {task['Assigned By']} | **Task ID:** {task['Task ID']}")
-                        st.info(f"{task['Task Details']}")
-                        
-                        # Show the red feedback note if it was rejected!
-                        if task['Status'] == 'Rejected':
-                            st.error(f"**Feedback from Core:** {task['Feedback']}")
-                            
-                        if st.button(f"Mark Completed", key=f"complete_{task['Task ID']}"):
-                            update_task_in_sheet(task['Task ID'], "Pending Verification")
-                            st.success("Sent to Senior Core for verification!")
-                            st.rerun()
-                st.markdown("---")
+        
 
             
                 
@@ -316,7 +321,7 @@ else:
             # ... (All of your other department-specific questions and the submit button go here!) ...
             # ... (KEEP ALL YOUR EXISTING HEAD-SPECIFIC LOGIC HERE: Mails Sent, Current Topic, etc.) ...
             # --- HEAD OF PROJECTS ---
-        if st.session_state.role == "Head of Projects":
+            if st.session_state.role == "Head of Projects":
                 st.subheader("Section 1: Projects")
                 col1, col2, col3 = st.columns(3)
                 responses["Mails Sent"] = col1.number_input("Mails Sent", min_value=0)
