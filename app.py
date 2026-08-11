@@ -125,12 +125,12 @@ def get_active_topics(sheet_name):
 def send_email(to_email, subject, body):
     try:
         # Pulls your secure email credentials from Streamlit Secrets
-        sender_email = st.secrets["email_address"]
-        sender_password = st.secrets["email_password"]
+        sender = st.secrets["email_address"]
+        password = st.secrets["email_password"]
         
         # Package the email
         msg = MIMEMultipart()
-        msg['From'] = sender_email
+        msg['From'] = sender
         msg['To'] = to_email
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'plain'))
@@ -138,7 +138,7 @@ def send_email(to_email, subject, body):
         # Connect to Gmail and send it
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
-        server.login(sender_email, sender_password)
+        server.login(sender, password)
         server.send_message(msg)
         server.quit()
     except Exception as e:
