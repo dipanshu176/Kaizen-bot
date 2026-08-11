@@ -191,6 +191,20 @@ def get_dev_active_topics(sheet_name):
     except:
         return []
 
+def update_dev_topic_status(topic, status, taken_by=""):
+    sheet = get_sheet("Dev_Sessions")
+    records = sheet.get_all_records()
+    today_str = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d")
+    
+    for idx, row in enumerate(records):
+        if str(row.get('Topic', '')) == str(topic):
+            sheet.update_cell(idx + 2, 2, status)    # Column B: Status
+            sheet.update_cell(idx + 2, 3, today_str) # Column C: Last Updated
+            
+            if taken_by: # Only overwrite Column D if a name was provided
+                sheet.update_cell(idx + 2, 4, taken_by)
+            return
+
 def update_topic_status(sheet_name, topic, status):
     sheet = get_sheet(sheet_name)
     records = sheet.get_all_records()
@@ -371,12 +385,31 @@ else:
                 
                 proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
                 
-                st.subheader("Section 2: Development")
+                st.subheader("Section 2: Development Sessions")
+            
                 dev_topics = get_dev_active_topics("Dev_Sessions")
-                responses["Development session Topic"] = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic (Type manually if list is empty)")
-                dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "Took the session"])
-               
-                responses["Session Status"] = dev_status
+                dev_topic = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic (Type manually if empty)")
+            
+                dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "took the session"])
+            
+                dev_taken_list = []
+                dev_taken_manual = ""
+            
+                if dev_status == "took the session":
+                    # Fetch eligible leaders safely
+                    try:
+                        u_df = pd.DataFrame(get_sheet("Users").get_all_records())
+                        u_df.columns = u_df.columns.str.strip()
+                        # Filter dynamically for Head, Advisory board, or Director
+                    pattern = "head|advisory board|director"
+                    eligible_users = u_df[u_df['Role'].str.contains(pattern, case=False, na=False)]['Name'].tolist()
+                    except Exception:
+                    eligible_users = []
+                
+                    st.write("---")
+                    dev_taken_list = st.multiselect("Who took the session? (Select all that apply):", eligible_users)
+                    dev_taken_manual = st.text_input("Other senior members (Type names manually, if any):")
+                    st.write("---")
 
             # --- HEAD OF RESEARCH ---
             elif st.session_state.role == "Head of Research":
@@ -420,7 +453,15 @@ else:
                     if "Head of Projects" in st.session_state.role:
                         # 1. ALWAYS update the status in the tracker sheet (even without files)
                         if responses.get("Session Status") and responses.get("Development session Topic"):
-                            update_topic_status("Dev_Sessions", responses["Development session Topic"], responses["Session Status"])
+                            final_taken_by = ""
+                            if responses.get("Session Status") == "took the session":
+                                combined_names = dev_taken_list.copy()
+                                if dev_taken_manual.strip():
+                                    combined_names.append(dev_taken_manual.strip())
+                                final_taken_by = ", ".join(combined_names)
+                            
+                            # Use our new dedicated Dev update function!
+                            update_dev_topic_status(responses["Development session Topic"], responses["Session Status"], final_taken_by)
                         
                         # 2. ONLY upload files if they attached them
                         if proof_files:
@@ -562,11 +603,36 @@ else:
             with c3:
                 st.write("**Digital (Insight Series)**")
                 display_project_table("Insight_Series")
-
-            st.subheader("🏆 Department Leaderboard")
-            # display_performance_leaderboard(subs_df) # (Your existing leaderboard call)
             
             st.markdown("---")
+            st.subheader("📘 Development Sessions Tracker")
+            
+            try:
+                dev_df = pd.DataFrame(get_sheet("Dev_Sessions").get_all_records())
+            except Exception:
+                dev_df = pd.DataFrame()
+                st.warning("Could not load Development Sessions. Please wait 60 seconds.")
+                
+            if not dev_df.empty:
+                for _, row in dev_df.iterrows():
+                    d_topic = row.get("Topic", "Unknown")
+                    d_status = row.get("Status", "Unknown")
+                    d_updated = row.get("Last Updated", "")
+                    d_taken_by = row.get("Taken by", "")
+                    
+                    with st.expander(f"{d_topic} | Status: {d_status}"):
+                        st.write(f"**Last Updated:** {d_updated}")
+                        if d_taken_by:
+                            st.write(f"**Taken By:** {d_taken_by}")
+                        
+                        # Only show Verify button for these two specific statuses!
+                        if d_status in ["Review", "took the session"]:
+                            if st.button(f"✅ Verify / Mark as Done", key=f"verify_dev_{d_topic}"):
+                                update_dev_topic_status(d_topic, "Done")
+                                st.success(f"'{d_topic}' successfully verified and closed!")
+                                st.rerun()
+            else:
+                st.info("No active development sessions found.")
             
             # --- NEW: RETENTION & BURNOUT FLAGS ---
             st.subheader("🚩 Retention & Burnout Alerts")
