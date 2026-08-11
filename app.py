@@ -16,6 +16,7 @@ import base64
 import re
 import uuid
 import time
+from run_alerts import send_email
 
 # ==========================================
 # CONFIGURATION & AUTHENTICATION
@@ -824,6 +825,7 @@ else:
                                     send_email(head_email, subject, body)
                                 except Exception as e:
                                     st.error(f"Task saved, but email alert failed to send: {e}")
+                                    st.stop()
                                 
                             st.success("Task(s) assigned successfully!")
                             st.rerun()
