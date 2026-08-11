@@ -137,8 +137,10 @@ def display_head_active_tasks():
             for _, task in my_tasks.iterrows():
                 # Calculate Days Pending safely
                 try:
-                    task_date = datetime.strptime(str(task['Timestamp']), "%Y-%m-%d %H:%M:%S")
-                    days_pending = (datetime.now() - task_date).days
+                    task_date = datetime.strptime(str(task['Timestamp']), "%Y-%m-%d %H:%M:%S").date()
+                    # Get today's date strictly in IST
+                    today_date = datetime.now(pytz.timezone('Asia/Kolkata')).date()
+                    days_pending = (today_date - task_date).days
                 except:
                     days_pending = 0
                 
