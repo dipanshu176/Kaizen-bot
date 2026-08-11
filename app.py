@@ -390,12 +390,12 @@ else:
                 dev_topics = get_dev_active_topics("Dev_Sessions")
                 dev_topic = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic (Type manually if empty)")
             
-                dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "took the session"])
+                dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "Took the session"])
             
                 dev_taken_list = []
                 dev_taken_manual = ""
             
-                if dev_status == "took the session":
+                if dev_status == "Took the session":
                     # Fetch eligible leaders safely
                     try:
                         u_df = pd.DataFrame(get_sheet("Users").get_all_records())
@@ -454,7 +454,7 @@ else:
                         # 1. ALWAYS update the status in the tracker sheet (even without files)
                         if responses.get("Session Status") and responses.get("Development session Topic"):
                             final_taken_by = ""
-                            if responses.get("Session Status") == "took the session":
+                            if responses.get("Session Status") == "Took the session":
                                 combined_names = dev_taken_list.copy()
                                 if dev_taken_manual.strip():
                                     combined_names.append(dev_taken_manual.strip())
@@ -620,13 +620,25 @@ else:
                     d_updated = row.get("Last Updated", "")
                     d_taken_by = row.get("Taken by", "")
                     
-                    with st.expander(f"{d_topic} | Status: {d_status}"):
-                        st.write(f"**Last Updated:** {d_updated}")
+                    days_passed = 0
+                    if d_updated:
+                        try:
+                            # Safely read the date format "%Y-%m-%d"
+                            updated_date = datetime.strptime(str(d_updated), "%Y-%m-%d").date()
+                            today_date = datetime.now(pytz.timezone('Asia/Kolkata')).date()
+                            days_passed = (today_date - updated_date).days
+                        except:
+                            days_passed = 0
+
+                        # Display the days passed in the expander title!
+                    with st.expander(f"{d_topic} | {d_status} (for {days_passed} days)"):
+                        st.write(f"**Current Status:** {d_status} (for {days_passed} days)")
                         if d_taken_by:
                             st.write(f"**Taken By:** {d_taken_by}")
+
                         
                         # Only show Verify button for these two specific statuses!
-                        if d_status in ["Review", "took the session"]:
+                        if d_status in ["Review", "Took the session"]:
                             if st.button(f"✅ Verify / Mark as Done", key=f"verify_dev_{d_topic}"):
                                 update_dev_topic_status(d_topic, "Done")
                                 st.success(f"'{d_topic}' successfully verified and closed!")
