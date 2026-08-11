@@ -124,9 +124,9 @@ def get_active_topics(sheet_name):
 
 def send_email(to_email, subject, body):
     try:
-        # Pulls your secure email credentials from Streamlit Secrets
-        sender_email = st.secrets["email_address"]
-        sender_password = st.secrets["email_password"]
+        # Pulls from the [email] section in your TOML file
+        sender_email = st.secrets["email"]["sender"]
+        sender_password = st.secrets["email"]["password"]
         
         # Package the email
         msg = MIMEMultipart()
@@ -142,8 +142,8 @@ def send_email(to_email, subject, body):
         server.send_message(msg)
         server.quit()
     except Exception as e:
-        raise e # If it fails, it passes the error safely to your red warning box If it fails, it passes the error safely to your red warning box
-
+        raise e
+        
 def display_head_active_tasks():
     st.subheader("🎯 My Active Tasks")
     try:
