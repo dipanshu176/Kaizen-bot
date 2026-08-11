@@ -307,7 +307,7 @@ else:
                             update_task_in_sheet(task['Task ID'], "Pending Verification")
                             st.success("Sent to Senior Core for verification!")
                             st.rerun()
-        st.markdown("---")
+                st.markdown("---")
 
             
                 
@@ -316,7 +316,7 @@ else:
             # ... (All of your other department-specific questions and the submit button go here!) ...
             # ... (KEEP ALL YOUR EXISTING HEAD-SPECIFIC LOGIC HERE: Mails Sent, Current Topic, etc.) ...
             # --- HEAD OF PROJECTS ---
-            if st.session_state.role == "Head of Projects":
+        if st.session_state.role == "Head of Projects":
                 st.subheader("Section 1: Projects")
                 col1, col2, col3 = st.columns(3)
                 responses["Mails Sent"] = col1.number_input("Mails Sent", min_value=0)
