@@ -396,18 +396,23 @@ else:
                 dev_taken_manual = ""
             
                 if dev_status == "Took the session":
+                    if "eligible_leaders" not in st.session_state:
                     # Fetch eligible leaders safely
-                    try:
-                        u_df = pd.DataFrame(get_sheet("Users").get_all_records())
-                        u_df.columns = u_df.columns.str.strip()
-                        # Filter dynamically for Head, Advisory board, or Director
-                        pattern = "head|advisory board|director"
-                        eligible_users = u_df[u_df['Role'].str.contains(pattern, case=False, na=False)]['Name'].tolist()
-                    except Exception:
-                        eligible_users = []
+                        try:
+                            u_df = pd.DataFrame(get_sheet("Users").get_all_records())
+                            u_df.columns = u_df.columns.str.strip()
+                            # Filter dynamically for Head, Advisory board, or Director
+                            pattern = "head|advisory board|director"
+                            eligible_users = u_df[u_df['Role'].str.contains(pattern, case=False, na=False)]['Name'].tolist()
+                        except Exception:
+                            eligible_users = []
                 
                     st.write("---")
-                    dev_taken_list = st.multiselect("Who took the session? (Select all that apply):", eligible_users)
+                    if len(st.session_state.eligible_leaders) > 0:
+                        dev_taken_list = st.multiselect("Who took the session? (Select all that apply):", st.session_state.eligible_leaders)
+                    else:
+                        st.warning("Loading names from Google Sheets... please refresh in 60 seconds.")
+                    
                     dev_taken_manual = st.text_input("Other senior members (Type names manually, if any):")
                     st.write("---")
 
