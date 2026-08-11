@@ -325,10 +325,10 @@ else:
             responses["LinkedIn Msgs"] = col3.number_input("LinkedIn Messages", min_value=0)
                 
             col4, col5 = st.columns(2)
-                responses["Meetings Done"] = col4.number_input("Meetings Done", min_value=0)
-                responses["Projects Converted"] = col5.number_input("Projects Converted", min_value=0)
+            responses["Meetings Done"] = col4.number_input("Meetings Done", min_value=0)
+            responses["Projects Converted"] = col5.number_input("Projects Converted", min_value=0)
                 
-                proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
+            proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
                 
                 st.subheader("Section 2: Development")
                 dev_topics = get_dev_active_topics("Dev_Sessions")
