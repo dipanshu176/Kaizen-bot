@@ -461,7 +461,7 @@ else:
         sheet = get_sheet("Submissions")
         subs_df = pd.DataFrame(sheet.get_all_records())
         
-        tab_dash, tab_pend, tab_res, tab_hist = st.tabs(["📊 Analytics Dashboard", "✅ Pending Queue", "⏳ Resolution Queue", "🗂️ Audit History"])
+        tab_dash, tab_pend, tab_res, tab_hist, tab_tasks = st.tabs(["📊 Analytics Dashboard", "✅ Pending Queue", "⏳ Resolution Queue", "🗂️ Audit History", "Tasks Assigned"])
         
         # --- TAB 1: DASHBOARD ---
         # --- TAB 1: DASHBOARD ---
