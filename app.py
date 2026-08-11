@@ -385,37 +385,48 @@ else:
                 
                 proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
             
-                st.subheader("Section 2: Development Sessions")
+            st.subheader("Section 2: Development Sessions")
             
-                dev_topics = get_dev_active_topics("Dev_Sessions")
-                dev_topic = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic (Type manually if empty)")
+            dev_topics = get_dev_active_topics("Dev_Sessions")
             
-                dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "Took the session"])
+            # ADDED KEY: Locks this widget in memory so it never resets
+            if dev_topics:
+                dev_topic = st.selectbox("Current Topic", dev_topics, key="dev_topic_select")
+            else:
+                dev_topic = st.text_input("Current Topic (Type manually if empty)", key="dev_topic_text")
             
-                dev_taken_list = []
-                dev_taken_manual = ""
+            # ADDED KEY: This is the magic fix that prevents the dropdown from resetting!
+            dev_status = st.selectbox("Session Status", 
+                                      ["Drafting", "Review", "Done", "Took the session"], 
+                                      key="dev_status_select")
             
-                if dev_status == "Took the session":
-                    if "eligible_leaders" not in st.session_state:
-                    # Fetch eligible leaders safely
-                        try:
-                            u_df = pd.DataFrame(get_sheet("Users").get_all_records())
-                            u_df.columns = u_df.columns.str.strip()
-                            # Filter dynamically for Head, Advisory board, or Director
-                            pattern = "head|advisory board|director"
-                            eligible_users = u_df[u_df['Role'].str.contains(pattern, case=False, na=False)]['Name'].tolist()
-                        except Exception:
-                            eligible_users = []
+            dev_taken_list = []
+            dev_taken_manual = ""
+            
+            # .strip().lower() makes it 100% immune to invisible spaces!
+            if dev_status.strip().lower() == "took the session":
                 
-                    st.write("---")
-                    if len(st.session_state.eligible_leaders) > 0:
-                        dev_taken_list = st.multiselect("Who took the session? (Select all that apply):", st.session_state.eligible_leaders)
-                    else:
-                        st.warning("Loading names from Google Sheets... please refresh in 60 seconds.")
+                if "eligible_leaders" not in st.session_state:
+                    try:
+                        u_df = pd.DataFrame(get_sheet("Users").get_all_records())
+                        u_df.columns = u_df.columns.str.strip()
+                        pattern = "head|advisory board|director"
+                        st.session_state.eligible_leaders = u_df[u_df['Role'].str.contains(pattern, case=False, na=False)]['Name'].tolist()
+                    except Exception:
+                        st.session_state.eligible_leaders = []
+                
+                st.write("---")
+                if len(st.session_state.eligible_leaders) > 0:
+                    # ADDED KEY here too!
+                    dev_taken_list = st.multiselect("Who took the session? (Select all that apply):", 
+                                                    st.session_state.eligible_leaders,
+                                                    key="dev_multi_select")
+                else:
+                    st.warning("Loading names from Google Sheets... please refresh.")
                     
-                    dev_taken_manual = st.text_input("Other senior members (Type names manually, if any):")
-                    st.write("---")
-
+                dev_taken_manual = st.text_input("Other senior members (Type names manually, if any):", 
+                                                 key="dev_manual_text")
+                st.write("---")
             # --- HEAD OF RESEARCH ---
             elif st.session_state.role == "Head of Research":
                 st.subheader("Section 1: Industry Primer")
