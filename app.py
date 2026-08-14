@@ -212,27 +212,50 @@ def update_topic_status(sheet_name, topic, status):
     
     for idx, row in enumerate(records):
         if str(row.get('Topic', '')) == str(topic):
+            current_status = str(row.get('Status', ''))
+            
+            # If the status is exactly the same, do nothing! (Fixes the 0-day reset bug)
+            if current_status.lower() == status.lower():
+                return 
+                
+            # If the status changed, update the Status and the 'Last Updated' date
             sheet.update_cell(idx + 2, 2, status)
-            sheet.update_cell(idx + 2, 3, today_str)  # Updates Column C
+            sheet.update_cell(idx + 2, 3, today_str) 
             return
             
-    # If the topic doesn't exist yet, append it with today's date
-    sheet.append_row([topic, status, today_str])
+    # If this is a brand new topic, append it with today's date in BOTH columns 
+    # (Column C: Last Updated, Column D: Start Date)
+    sheet.append_row([topic, status, today_str, today_str])
 
 def display_project_table(sheet_name):
     try:
         df = pd.DataFrame(get_sheet(sheet_name).get_all_records())
         if not df.empty and 'Last Updated' in df.columns:
             today = pd.to_datetime(datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d"))
-            # Convert to datetime safely, calculate difference
+            
+            # Safely read the dates
             df['Last Updated'] = pd.to_datetime(df['Last Updated'], errors='coerce')
-            df['Days in Status'] = (today - df['Last Updated']).dt.days
-            # Clean up the format for display
-            df['Days in Status'] = df['Days in Status'].fillna(0).astype(int)
+            if 'Start Date' in df.columns:
+                df['Start Date'] = pd.to_datetime(df['Start Date'], errors='coerce')
+            
+            # The smart math logic
+            def calculate_days(r):
+                if str(r.get('Status', '')).lower() == 'drafting' and 'Start Date' in r and pd.notnull(r['Start Date']):
+                    return (today - r['Start Date']).days
+                elif pd.notnull(r.get('Last Updated')):
+                    return (today - r['Last Updated']).days
+                return 0
+                
+            df['Days in Status'] = df.apply(calculate_days, axis=1).fillna(0).astype(int)
+            
+            # Clean up the format for the dashboard
             df['Last Updated'] = df['Last Updated'].dt.strftime('%Y-%m-%d')
+            if 'Start Date' in df.columns:
+                df['Start Date'] = df['Start Date'].dt.strftime('%Y-%m-%d')
+                
         st.dataframe(df, use_container_width=True, hide_index=True)
     except Exception as e:
-        st.caption("No data or missing 'Last Updated' column yet.")
+        st.caption("No data or missing date columns yet.")
 
 def display_performance_leaderboard(subs_df):
     try:
