@@ -425,7 +425,7 @@ else:
             
             
             # Show the boxes permanently, but they only matter if they select "Took the session"
-                
+        if st.session_state.role == "Head of Projects":    
             
             if "eligible_leaders" not in st.session_state:
                 try:
