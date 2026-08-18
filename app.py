@@ -437,6 +437,14 @@ else:
                 
                 st.subheader("Section 2: Case Study / Analysis")
                 case_topics = get_active_topics("Case_Studies")
+                # Append the ➕ button to the end of the existing topics
+                case_options = case_topics + ["➕ Add New Topic"] if case_topics else ["➕ Add New Topic"]
+            
+                selected_case = st.selectbox("Current Topic", case_options, key="case_topic_sel")
+                # If they click Add New, instantly slide in a text box!
+                new_case_topic = ""
+                if selected_case == "➕ Add New Topic":
+                    new_case_topic = st.text_input("✨ Enter the new Case Study Topic:", key="new_case_topic_txt")
                 responses["Case Study Topic"] = st.selectbox("Current Topic", case_topics) if case_topics else st.text_input("Current Topic (Type manually if list is empty)")
                 responses["Case Study Status"] = st.selectbox("Case Study Status", ["Drafting", "review", "done", "posted"])
 
@@ -507,8 +515,25 @@ else:
                     if st.session_state.role == "Head of Research":
                         if responses.get("Industry Status"):
                             update_topic_status("Industries", responses["Industry Topic"], responses["Industry Status"])
-                        if responses.get("Case Study Status"):
-                            update_topic_status("Case_Studies", responses["Case Study Topic"], responses["Case Study Status"])
+                        if final_case_topic:
+                            responses["Case Study Topic"] = final_case_topic
+                            responses["Case Study Status"] = case_status
+
+                        final_case_topic = new_case_topic.strip() if selected_case == "➕ Add New Topic" else selected_case
+                            
+                            # If it's a brand new topic, append a fresh row to the Google Sheet!
+                            if selected_case == "➕ Add New Topic":
+                                try:
+                                    sheet = get_sheet("Case_Studies")
+                                    today_str = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d")
+                                    
+                                    # Matches your Headers: Topic, Status, Last Updated, Start Date
+                                    sheet.append_row([final_case_topic, case_status, today_str, today_str])
+                                except Exception as e:
+                                    st.warning(f"Failed to add new topic to sheet: {e}")
+                            else:
+                                # If it's an old topic, just update it normally
+                                update_topic_status("Case_Studies", final_case_topic, case_status)
                     elif st.session_state.role == "Head of Digital":
                         if responses.get("Insight Status"):
                             update_topic_status("Insight_Series", responses["Insight Topic"], responses["Insight Status"])
