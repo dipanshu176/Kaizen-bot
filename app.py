@@ -374,24 +374,7 @@ else:
         # ==========================================
         # HEAD OF RESEARCH UI (MUST BE ABOVE THE FORM!)
         # ==========================================
-        if "Head of Research" in st.session_state.role:
-            st.subheader("Section 1: Industry Primer")
-            ind_topics = get_active_topics("Industries")
-            ind_topic = st.selectbox("Current Industry", ind_topics, key="ind_topic_sel") if ind_topics else st.text_input("Current Industry", key="ind_topic_txt")
-            ind_status = st.selectbox("Industry Status", ["Drafting", "review", "done"], key="ind_status_sel")
-            
-            st.subheader("Section 2: Case Study / Analysis")
-            case_topics = get_active_topics("Case_Studies")
-            
-            # --- The Magic Dropdown ---
-            case_options = case_topics + ["➕ Add New Topic"] if case_topics else ["➕ Add New Topic"]
-            selected_case = st.selectbox("Current Topic", case_options, key="case_topic_sel")
-            
-            new_case_topic = ""
-            if selected_case == "➕ Add New Topic":
-                new_case_topic = st.text_input("✨ Enter the new Case Study Topic:", key="new_case_topic_txt")
-                
-            case_status = st.selectbox("Case Study Status", ["Drafting", "review", "done", "posted"], key="case_status_sel")
+
 
         # ==========================================
         # NOW THE FORM BEGINS (Keep this exactly as is)
