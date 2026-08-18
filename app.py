@@ -396,7 +396,9 @@ else:
         # ==========================================
         # NOW THE FORM BEGINS (Keep this exactly as is)
         # ==========================================
-        
+        with st.form(key="daily_update_form"):
+            responses = {}
+            # ... (Your attendance tracking logic goes here) ...
             
         with st.form(key="daily_update_form"):
             responses = {}
@@ -422,21 +424,39 @@ else:
             # ... (All of your other department-specific questions and the submit button go here!) ...
             # ... (KEEP ALL YOUR EXISTING HEAD-SPECIFIC LOGIC HERE: Mails Sent, Current Topic, etc.) ...
             # --- HEAD OF PROJECTS ---
+            if st.session_state.role == "Head of Projects":
+                st.subheader("Section 1: Projects")
+                col1, col2, col3 = st.columns(3)
+                responses["Mails Sent"] = col1.number_input("Mails Sent", min_value=0)
+                responses["Calls Done"] = col2.number_input("Calls Done", min_value=0)
+                responses["LinkedIn Msgs"] = col3.number_input("LinkedIn Messages", min_value=0)
+                
+                col4, col5 = st.columns(2)
+                responses["Meetings Done"] = col4.number_input("Meetings Done", min_value=0)
+                responses["Projects Converted"] = col5.number_input("Projects Converted", min_value=0)
+                
+                proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
+                
+                st.subheader("Section 2: Development Sessions")
             
+                dev_topics = get_dev_active_topics("Dev_Sessions")
+                dev_topic = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic")
+            
+                dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "Took the session"])
             
             # Show the boxes permanently, but they only matter if they select "Took the session"
-        if st.session_state.role == "Head of Projects":    
+                st.markdown("*(If you selected 'Took the session', please fill out below)*")
             
-            if "eligible_leaders" not in st.session_state:
-                try:
-                    u_df = pd.DataFrame(get_sheet("Users").get_all_records())
-                    u_df.columns = u_df.columns.str.strip()
-                    st.session_state.eligible_leaders = u_df[u_df['Role'].str.contains("head|advisory board|director", case=False, na=False)]['Name'].tolist()
-                except:
-                    st.session_state.eligible_leaders = []
+                if "eligible_leaders" not in st.session_state:
+                    try:
+                        u_df = pd.DataFrame(get_sheet("Users").get_all_records())
+                        u_df.columns = u_df.columns.str.strip()
+                        st.session_state.eligible_leaders = u_df[u_df['Role'].str.contains("head|advisory board|director", case=False, na=False)]['Name'].tolist()
+                    except:
+                        st.session_state.eligible_leaders = []
                     
-            dev_taken_list = st.multiselect("Who took the session?", st.session_state.eligible_leaders)
-            dev_taken_manual = st.text_input("Other senior members (if any):")    
+                dev_taken_list = st.multiselect("Who took the session?", st.session_state.eligible_leaders)
+                dev_taken_manual = st.text_input("Other senior members (if any):")    
             # --- HEAD OF RESEARCH ---
             elif st.session_state.role == "Head of Research":
                 st.subheader("Section 1: Industry Primer")
