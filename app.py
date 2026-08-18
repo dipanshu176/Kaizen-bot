@@ -427,16 +427,16 @@ else:
             # Show the boxes permanently, but they only matter if they select "Took the session"
                 
             
-                if "eligible_leaders" not in st.session_state:
-                    try:
-                        u_df = pd.DataFrame(get_sheet("Users").get_all_records())
-                        u_df.columns = u_df.columns.str.strip()
-                        st.session_state.eligible_leaders = u_df[u_df['Role'].str.contains("head|advisory board|director", case=False, na=False)]['Name'].tolist()
-                    except:
-                        st.session_state.eligible_leaders = []
+            if "eligible_leaders" not in st.session_state:
+                try:
+                    u_df = pd.DataFrame(get_sheet("Users").get_all_records())
+                    u_df.columns = u_df.columns.str.strip()
+                    st.session_state.eligible_leaders = u_df[u_df['Role'].str.contains("head|advisory board|director", case=False, na=False)]['Name'].tolist()
+                except:
+                    st.session_state.eligible_leaders = []
                     
-                dev_taken_list = st.multiselect("Who took the session?", st.session_state.eligible_leaders)
-                dev_taken_manual = st.text_input("Other senior members (if any):")    
+            dev_taken_list = st.multiselect("Who took the session?", st.session_state.eligible_leaders)
+            dev_taken_manual = st.text_input("Other senior members (if any):")    
             # --- HEAD OF RESEARCH ---
             elif st.session_state.role == "Head of Research":
                 st.subheader("Section 1: Industry Primer")
