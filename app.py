@@ -396,9 +396,7 @@ else:
         # ==========================================
         # NOW THE FORM BEGINS (Keep this exactly as is)
         # ==========================================
-        with st.form(key="daily_update_form"):
-            responses = {}
-            # ... (Your attendance tracking logic goes here) ...
+        
             
         with st.form(key="daily_update_form"):
             responses = {}
