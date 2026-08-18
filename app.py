@@ -432,8 +432,8 @@ else:
             elif st.session_state.role == "Head of Research":
                 st.subheader("Section 1: Industry Primer")
                 ind_topics = get_active_topics("Industries")
-                responses["Industry Topic"] = st.selectbox("Current Industry", ind_topics) if ind_topics else st.text_input("Current Industry (Type manually if list is empty)")
-                responses["Industry Status"] = st.selectbox("Industry Status", ["Drafting", "review", "done"])
+                ind_topic = st.selectbox("Current Industry", ind_topics) if ind_topics else st.text_input("Current Industry", key="ind_topic_txt")
+                ind_status = st.selectbox("Industry Status", ["Drafting", "review", "done"], key="ind_status_sel")
                 
                 st.subheader("Section 2: Case Study / Analysis")
                 case_topics = get_active_topics("Case_Studies")
@@ -445,8 +445,7 @@ else:
                 new_case_topic = ""
                 if selected_case == "➕ Add New Topic":
                     new_case_topic = st.text_input("✨ Enter the new Case Study Topic:", key="new_case_topic_txt")
-                responses["Case Study Topic"] = st.selectbox("Current Topic", case_topics) if case_topics else st.text_input("Current Topic (Type manually if list is empty)")
-                responses["Case Study Status"] = st.selectbox("Case Study Status", ["Drafting", "review", "done", "posted"])
+                case_status = st.selectbox("Case Study Status", ["Drafting", "review", "done", "posted"], key="case_status_sel")
 
             # --- HEAD OF DIGITAL ---
             # --- HEAD OF DIGITAL ---
@@ -512,27 +511,26 @@ else:
                     
                     st.success("Update submitted successfully! The Advisory Board will review it.")
                     
-                    if st.session_state.role == "Head of Research":
-                        if responses.get("Industry Status"):
-                            update_topic_status("Industries", responses["Industry Topic"], responses["Industry Status"])
+                    elif st.session_state.role == "Head of Research":
+                        if ind_topic:
+                            responses["Industry Topic"] = ind_topic
+                            responses["Industry Status"] = ind_status
+                            update_topic_status("Industries", ind_topic, ind_status)
+                            
+                        final_case_topic = new_case_topic.strip() if selected_case == "➕ Add New Topic" else selected_case
+                        
                         if final_case_topic:
                             responses["Case Study Topic"] = final_case_topic
                             responses["Case Study Status"] = case_status
-
-                        final_case_topic = new_case_topic.strip() if selected_case == "➕ Add New Topic" else selected_case
                             
-                            # If it's a brand new topic, append a fresh row to the Google Sheet!
-                        if selected_case == "➕ Add New Topic":
-                            try:
-                                sheet = get_sheet("Case_Studies")
-                                today_str = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d")
-                                    
-                                    # Matches your Headers: Topic, Status, Last Updated, Start Date
-                                sheet.append_row([final_case_topic, case_status, today_str, today_str])
-                            except Exception as e:
-                                st.warning(f"Failed to add new topic to sheet: {e}")
+                            if selected_case == "➕ Add New Topic":
+                                try:
+                                    sheet = get_sheet("Case_Studies")
+                                    today_str = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d")
+                                    sheet.append_row([final_case_topic, case_status, today_str, today_str])
+                                except Exception as e:
+                                    st.warning(f"Failed to add new topic to sheet: {e}")
                             else:
-                                # If it's an old topic, just update it normally
                                 update_topic_status("Case_Studies", final_case_topic, case_status)
                     elif st.session_state.role == "Head of Digital":
                         if responses.get("Insight Status"):
