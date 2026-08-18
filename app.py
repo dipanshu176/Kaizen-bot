@@ -425,7 +425,7 @@ else:
             
             
             # Show the boxes permanently, but they only matter if they select "Took the session"
-                st.markdown("*(If you selected 'Took the session', please fill out below)*")
+                
             
                 if "eligible_leaders" not in st.session_state:
                     try:
