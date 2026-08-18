@@ -511,7 +511,7 @@ else:
                     
                     st.success("Update submitted successfully! The Advisory Board will review it.")
                     
-                    elif st.session_state.role == "Head of Research":
+                    if st.session_state.role == "Head of Research":
                         if ind_topic:
                             responses["Industry Topic"] = ind_topic
                             responses["Industry Status"] = ind_status
