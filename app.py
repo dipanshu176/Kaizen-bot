@@ -522,15 +522,15 @@ else:
                         final_case_topic = new_case_topic.strip() if selected_case == "➕ Add New Topic" else selected_case
                             
                             # If it's a brand new topic, append a fresh row to the Google Sheet!
-                            if selected_case == "➕ Add New Topic":
-                                try:
-                                    sheet = get_sheet("Case_Studies")
-                                    today_str = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d")
+                        if selected_case == "➕ Add New Topic":
+                            try:
+                                sheet = get_sheet("Case_Studies")
+                                today_str = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d")
                                     
                                     # Matches your Headers: Topic, Status, Last Updated, Start Date
-                                    sheet.append_row([final_case_topic, case_status, today_str, today_str])
-                                except Exception as e:
-                                    st.warning(f"Failed to add new topic to sheet: {e}")
+                                sheet.append_row([final_case_topic, case_status, today_str, today_str])
+                            except Exception as e:
+                                st.warning(f"Failed to add new topic to sheet: {e}")
                             else:
                                 # If it's an old topic, just update it normally
                                 update_topic_status("Case_Studies", final_case_topic, case_status)
