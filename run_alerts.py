@@ -16,7 +16,23 @@ GCP_CREDENTIALS = json.loads(os.environ.get("GCP_CREDENTIALS"))
 
 # Connect to Google Sheet
 gc = gspread.service_account_from_dict(GCP_CREDENTIALS)
-sh = gc.open_by_key("1_WmKztvT7p2X0Yj6M7fbwlLQ3SFbDFT7xMlhiLr1kQ8")
+max_retries = 3
+sh = None
+
+for attempt in range(max_retries):
+    try:
+        sh = gc.open_by_key("1_WmKztvT7p2X0Yj6M7fbwlLQ3SFbDFT7xMlhiLr1kQ8")
+        break  # Successfully opened the sheet, break out of the loop
+    except APIError as e:
+        # Check if it's a temporary 503 error and we have retries left
+        if "503" in str(e) and attempt < max_retries - 1:
+            print(f"Google API unavailable. Retrying in 5 seconds... (Attempt {attempt + 1}/{max_retries})")
+            time.sleep(5) 
+        else:
+            # If it's a different error (like 403 Forbidden) or we ran out of retries, crash normally
+            raise e
+
+# Now you can proceed with your script using 'sh'
 spreadsheet = gc.open("Kaizen_Management_Database")
 sheet = spreadsheet.worksheet("Submissions")
 
