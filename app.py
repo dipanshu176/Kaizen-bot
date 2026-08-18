@@ -400,9 +400,6 @@ else:
             responses = {}
             # ... (Your attendance tracking logic goes here) ...
             
-        with st.form(key="daily_update_form"):
-            responses = {}
-            
             # Map the attendance responses inside the form so it saves to the database
             if attendance == "Others":
                 responses["Attendance Status"] = f"Others ({absence_reason}) | Expected return in: {expected_days} day(s)"
