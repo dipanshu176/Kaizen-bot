@@ -422,25 +422,7 @@ else:
             # ... (All of your other department-specific questions and the submit button go here!) ...
             # ... (KEEP ALL YOUR EXISTING HEAD-SPECIFIC LOGIC HERE: Mails Sent, Current Topic, etc.) ...
             # --- HEAD OF PROJECTS ---
-            if st.session_state.role == "Head of Projects":
-                st.subheader("Section 1: Projects")
-                col1, col2, col3 = st.columns(3)
-                responses["Mails Sent"] = col1.number_input("Mails Sent", min_value=0)
-                responses["Calls Done"] = col2.number_input("Calls Done", min_value=0)
-                responses["LinkedIn Msgs"] = col3.number_input("LinkedIn Messages", min_value=0)
-                
-                col4, col5 = st.columns(2)
-                responses["Meetings Done"] = col4.number_input("Meetings Done", min_value=0)
-                responses["Projects Converted"] = col5.number_input("Projects Converted", min_value=0)
-                
-                proof_files = st.file_uploader("Upload Proofs (Screenshots)", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
-                
-                st.subheader("Section 2: Development Sessions")
             
-                dev_topics = get_dev_active_topics("Dev_Sessions")
-                dev_topic = st.selectbox("Current Topic", dev_topics) if dev_topics else st.text_input("Current Topic")
-            
-                dev_status = st.selectbox("Session Status", ["Drafting", "Review", "Done", "Took the session"])
             
             # Show the boxes permanently, but they only matter if they select "Took the session"
                 st.markdown("*(If you selected 'Took the session', please fill out below)*")
