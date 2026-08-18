@@ -585,28 +585,43 @@ else:
             st.subheader("Team Availability (Out of Office)")
             if not subs_df.empty:
                 absence_data = []
+                today_date = datetime.now(pytz.timezone('Asia/Kolkata')).date()
+                
                 # Check consecutive absence days for each user
                 for head in subs_df['Name'].unique():
                     head_subs = subs_df[subs_df['Name'] == head].sort_values(by='Timestamp', ascending=False)
-                    consec_days = 0
                     current_stat = "Working normally"
+                    absence_start_date = None
                     
-                    for _, row in head_subs.iterrows():
+                    for idx, row in head_subs.iterrows():
                         match = re.search(r'\*\*Attendance Status\*\*: (.*)', str(row['Submission_Data']))
-                        status = match.group(1) if match else "Working normally"
+                        status = match.group(1).strip() if match else "Working normally"
                         
-                        if consec_days == 0:
+                        if absence_start_date is None:
                             current_stat = status
                             if status == "Working normally":
-                                break  # They are active, stop counting
+                                break  # They are active, stop checking this person
                         
-                        if status == current_stat:
-                            consec_days += 1
+                        # If the status is an absence, keep tracing back to find the OLDEST date in the streak
+                        if status != "Working normally":
+                            try:
+                                # Extract just the YYYY-MM-DD from the timestamp
+                                row_date = datetime.strptime(str(row['Timestamp'])[:10], "%Y-%m-%d").date()
+                                absence_start_date = row_date
+                            except Exception:
+                                pass
                         else:
-                            break
+                            break  # We hit a day they were working, so the absence streak ends here
                             
-                    if current_stat != "Working normally":
-                        absence_data.append({"Name": head, "Status": current_stat, "Days Absent": consec_days})
+                    if current_stat != "Working normally" and absence_start_date:
+                        # Subtract the date they went absent from today's calendar date
+                        days_absent = (today_date - absence_start_date).days
+                        
+                        # If they submitted the absence today, it defaults to 0 days passed. 
+                        # We use max(1) to ensure it shows at least "1" day for current-day absences.
+                        days_absent = max(1, days_absent)
+                        
+                        absence_data.append({"Name": head, "Status": current_stat, "Days Absent": days_absent})
                         
                 if absence_data:
                     st.table(pd.DataFrame(absence_data))
